@@ -1,6 +1,6 @@
 ---
 title: "MiniProyecto"
-author: "Javier Marzo Caballero"
+author: "Javier Marzo Caballero, Iván Pérez Alonso"
 date: "`r Sys.Date()`"
 output: html_document
 ---
