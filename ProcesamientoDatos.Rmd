@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, warning=FALSE}
 library(sf)
+library(tidyverse)
 ```
 
 # Exploración de los datos
@@ -28,6 +29,9 @@ head(distritos)
 # Los distritos con id 17 (repetido varias veces), 18 y 19 no coinciden con 
 # los que están en el dataset de hoteles. Habría que ver si son relevantes o 
 # no y borrarlos en caso negativo.
+
+# Los distritos con id 17 estan repetidos por que son rasters diferentes, no hace falta eliminarlos
+# asi mismo  los distritos 18 y 19 son relevantes
 ```
 
 ## Hoteles
@@ -35,6 +39,8 @@ head(distritos)
 ```{r}
 hoteles <- read.csv("Datos_sin_procesar/hoteles_por_distritos.csv", sep=";")
 head(hoteles)
+
+#Este data frame lo utilizaremos exclusivamente para la parte de graficos y datos, no es necesario proyectarlo en Qgis
 ```
 
 
@@ -50,6 +56,8 @@ head(emt)
 ```{r}
 verde <- st_read("Datos_sin_procesar/espacios_verdes.geojson")
 head(verde)
+
+#Conservaremos estos datos
 ```
 
 
@@ -58,6 +66,8 @@ head(verde)
 ```{r}
 fuentes <- st_read("Datos_sin_procesar/fuentes_agua.geojson")
 head(fuentes)
+
+#estos datos estan correctos
 ```
 
 
@@ -66,7 +76,15 @@ head(fuentes)
 ```{r}
 monumentos <- st_read("Datos_sin_procesar/monumentos_turisticos.geojson")
 head(monumentos)
+
+monumentos_repetidos <- c('ESGLÉSIA DEL SAGRAT COR DE JESÚS (PATRAIX)',"ESGLÉSIA PARROQUIAL DE L'ANTIC CONVENT DE SANTA MARIA DE JESÚS",'PALAU DE LA MÚSICA','ANTIC MONESTIR DE SANT MIQUEL DELS REIS','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL SAGRAT COR','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE SANTA ANNA (BORBOTÓ)','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DE GRÀCIA - LA TORRE',"ESGLÉSIA DEL CRIST DE L'AGONIA DEL FORN D'ALCEDO",'ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL ROSARI (LEPANT-CASTELLAR)','BIOPARC','CIUTAT DE LES ARTS I LES CIÈNCIES')
+
+monumentos_arreglados <- monumentos %>% dplyr::filter(!(nombre %in% monumentos_repetidos))
 ```
+```{r}
+st_write(monumentos_arreglados, "monumentos_arreglados.geojson")
+```
+
 
 
 ## Recursos turísticos
