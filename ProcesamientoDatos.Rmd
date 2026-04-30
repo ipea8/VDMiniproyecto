@@ -1,0 +1,93 @@
+---
+title: "Procesamiento de Datos"
+author: "Javier Marzo Caballero, Iván Pérez Alonso, Yordano Rodriguez Bernal, Iván Jiménez Mañó y Héctor Balbastre Aparisi"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Librerías
+
+```{r, warning=FALSE}
+library(sf)
+```
+
+# Exploración de los datos
+
+## Distritos
+
+```{r}
+distritos <- st_read("Datos_sin_procesar/distritos.geojson")
+head(distritos)
+# Los distritos con id 17 (repetido varias veces), 18 y 19 no coinciden con 
+# los que están en el dataset de hoteles. Habría que ver si son relevantes o 
+# no y borrarlos en caso negativo.
+```
+
+## Hoteles
+
+```{r}
+hoteles <- read.csv("Datos_sin_procesar/hoteles_por_distritos.csv", sep=";")
+head(hoteles)
+```
+
+
+## EMT
+
+```{r}
+emt <- st_read("Datos_sin_procesar/EMT.geojson")
+head(emt)
+```
+
+## Espacios verdes
+
+```{r}
+verde <- st_read("Datos_sin_procesar/espacios_verdes.geojson")
+head(verde)
+```
+
+
+## Fuentes de agua públicas
+
+```{r}
+fuentes <- st_read("Datos_sin_procesar/fuentes_agua.geojson")
+head(fuentes)
+```
+
+
+## Monumentos turísticos
+
+```{r}
+monumentos <- st_read("Datos_sin_procesar/monumentos_turisticos.geojson")
+head(monumentos)
+```
+
+
+## Recursos turísticos
+
+```{r}
+recursos <- st_read("Datos_sin_procesar/recursos_turisticos.geojson")
+head(recursos)
+```
+
+
+## Zonas de actividades
+
+```{r}
+actividades <- st_read("Datos_sin_procesar/zonas_actividades.geojson")
+head(actividades)
+```
+
+
+## Zonas de juego infantil
+
+```{r}
+juego <- st_read("Datos_sin_procesar/zonas_juego_infantiles.geojson")
+head(juego)
+```
