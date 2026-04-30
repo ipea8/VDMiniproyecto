@@ -25,6 +25,7 @@ library(tidyverse)
 
 ```{r}
 distritos <- st_read("Datos_sin_procesar/distritos.geojson")
+distritos <- distritos[,-4]
 head(distritos)
 # Los distritos con id 17 (repetido varias veces), 18 y 19 no coinciden con 
 # los que están en el dataset de hoteles. Habría que ver si son relevantes o 
@@ -34,13 +35,24 @@ head(distritos)
 # asi mismo  los distritos 18 y 19 son relevantes
 ```
 
+```{r}
+st_write(distritos, "Datos_Procesados/distritos.geojson")
+```
+
+
 ## Hoteles
 
 ```{r}
 hoteles <- read.csv("Datos_sin_procesar/hoteles_por_distritos.csv", sep=";")
+hoteles <- hoteles[,-c(11, 13)]
 head(hoteles)
 
-#Este data frame lo utilizaremos exclusivamente para la parte de graficos y datos, no es necesario proyectarlo en Qgis
+#Este data frame lo utilizaremos exclusivamente para la parte de gráficos y datos, no 
+#es necesario proyectarlo en Qgis.
+```
+
+```{r}
+st_write(hoteles, "Datos_Procesados/hoteles.geojson")
 ```
 
 
@@ -48,8 +60,14 @@ head(hoteles)
 
 ```{r}
 emt <- st_read("Datos_sin_procesar/EMT.geojson")
+emt <- emt[,-c(3:5)]
 head(emt)
 ```
+
+```{r}
+st_write(emt, "Datos_Procesados/EMT.geojson")
+```
+
 
 ## Espacios verdes
 
@@ -60,6 +78,10 @@ head(verde)
 #Conservaremos estos datos como elemento estetico, no es necesario para el objetivo del trabajo
 ```
 
+```{r}
+st_write(verde, "Datos_Procesados/espacios_verdes.geojson")
+```
+
 
 ## Fuentes de agua públicas
 
@@ -68,6 +90,10 @@ fuentes <- st_read("Datos_sin_procesar/fuentes_agua.geojson")
 head(fuentes)
 
 #estos datos estan correctos
+```
+
+```{r}
+st_write(fuentes, "Datos_Procesados/fuentes_agua.geojson")
 ```
 
 
@@ -91,7 +117,12 @@ st_write(monumentos_arreglados, "Datos_Procesados/monumentos_arreglados.geojson"
 
 ```{r}
 recursos <- st_read("Datos_sin_procesar/recursos_turisticos.geojson")
+recursos <- recursos[,-3]
 head(recursos)
+```
+
+```{r}
+st_write(recursos, "Datos_Procesados/recursos_turisticos.geojson")
 ```
 
 
@@ -111,3 +142,8 @@ juego <- st_read("Datos_sin_procesar/zonas_juego_infantiles.geojson")
 juego <- juego[, -c(8, 9, 10, 11, 12)] # Columnas que no sirven
 head(juego)
 ```
+
+```{r}
+st_write(juego, "Datos_Procesados/juegos_infantiles.geojson")
+```
+
