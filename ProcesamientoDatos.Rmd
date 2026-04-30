@@ -107,33 +107,51 @@ head(monumentos)
 monumentos_repetidos <- c('ESGLÉSIA DEL SAGRAT COR DE JESÚS (PATRAIX)',"ESGLÉSIA PARROQUIAL DE L'ANTIC CONVENT DE SANTA MARIA DE JESÚS",'PALAU DE LA MÚSICA','ANTIC MONESTIR DE SANT MIQUEL DELS REIS','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL SAGRAT COR','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE SANTA ANNA (BORBOTÓ)','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DE GRÀCIA - LA TORRE',"ESGLÉSIA DEL CRIST DE L'AGONIA DEL FORN D'ALCEDO",'ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL ROSARI (LEPANT-CASTELLAR)','BIOPARC','CIUTAT DE LES ARTS I LES CIÈNCIES','PALAU DE CONGRESSOS','12-PARROQUIA SANTIAGO APÓSTOL','CASA MUSEU BLASCO IBÁÑEZ','ASIL DE SANT JOAN DE DÉU','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DELS ÀNGELS (EL CABANYAL)','MUSEU DE LA SETMANA SANTA MARINERA')
 
 monumentos <- monumentos %>% dplyr::filter(!(nombre %in% monumentos_repetidos))
+
+iglesias1 <- monumentos %>%
+  filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
+iglesias1$id <- c(1:55)
+
+iglesias1 <- iglesias1[,c(10,2,9)]
+
+monumentos <- monumentos[!monumentos$nombre %in% iglesias1$nombre, ]
 ```
+
 ```{r}
 st_write(monumentos, "Datos_Procesados/monumentos_turisticos.geojson")
 ```
-
-
 
 ## Recursos turísticos
 
 ```{r}
 recursos <- st_read("Datos_sin_procesar/recursos_turisticos.geojson")
 recursos <- recursos[,-3]
-head(recursos)
-
-iglesias1 <- monumentos %>%
-  filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
 
 iglesias2 <- recursos %>%
   filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
+iglesias2$id <- c(56:68)
 
+iglesias2 <- iglesias2[,c(12,2,11)]
+
+recursos <- recursos[!recursos$nombre %in% iglesias2$nombre, ]
+head(recursos)
+```
+
+```{r}
+st_write(recursos, "Datos_Procesados/recursos_turisticos.geojson")
+```
+
+
+## Iglesias
+
+```{r}
 iglesias <- rbind(iglesias1,iglesias2)
 
 head(iglesias)
 ```
 
 ```{r}
-st_write(recursos, "Datos_Procesados/recursos_turisticos.geojson")
+st_write(iglesias, "Datos_Procesados/iglesias.geojson")
 ```
 
 
