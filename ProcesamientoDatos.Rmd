@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, warning=FALSE}
 library(sf)
 library(tidyverse)
+library(stringr)
 ```
 
 # Exploración de los datos
@@ -119,6 +120,16 @@ st_write(monumentos, "Datos_Procesados/monumentos_turisticos.geojson")
 recursos <- st_read("Datos_sin_procesar/recursos_turisticos.geojson")
 recursos <- recursos[,-3]
 head(recursos)
+
+iglesias1 <- monumentos %>%
+  filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
+
+iglesias2 <- recursos %>%
+  filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
+
+iglesias <- rbind(iglesias1,iglesias2)
+
+head(iglesias)
 ```
 
 ```{r}
