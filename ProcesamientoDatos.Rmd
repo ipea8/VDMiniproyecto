@@ -112,9 +112,24 @@ iglesias1 <- monumentos %>%
   filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
 iglesias1$id <- c(1:55)
 
+palacios_museos1 <- monumentos %>%
+  filter(str_detect(nombre, regex("palacio|palau|museo|museu", ignore_case = TRUE)))
+palacios_museos1$id <- c(1:44)
+
+
 iglesias1 <- iglesias1[,c(10,2,9)]
+palacios_museos1 <- palacios_museos1[,c(10,2,9)]
+
 
 monumentos <- monumentos[!monumentos$nombre %in% iglesias1$nombre, ]
+monumentos <- monumentos[!monumentos$nombre %in% palacios_museos1$nombre, ]
+
+parroquias_conventos1 <- monumentos %>%
+  filter(str_detect(nombre, regex("parroquia|parròquia|convent", ignore_case = TRUE)))
+parroquias_conventos1$id <- c(1:12)
+
+parroquias_conventos1 <- parroquias_conventos1[,c(10,2,9)]
+monumentos <- monumentos[!monumentos$nombre %in% parroquias_conventos1$nombre, ]
 ```
 
 ```{r}
@@ -131,9 +146,24 @@ iglesias2 <- recursos %>%
   filter(str_detect(nombre, regex("iglesia|església", ignore_case = TRUE)))
 iglesias2$id <- c(56:68)
 
+palacios_museos2 <- recursos %>%
+  filter(str_detect(nombre, regex("palacio|palau|museo|museu", ignore_case = TRUE)))
+palacios_museos2$id <- c(45:53)
+
+
 iglesias2 <- iglesias2[,c(12,2,11)]
+palacios_museos2 <- palacios_museos2[,c(12,2,11)]
+
 
 recursos <- recursos[!recursos$nombre %in% iglesias2$nombre, ]
+recursos <- recursos[!recursos$nombre %in% palacios_museos2$nombre, ]
+
+parroquias_conventos2 <- recursos %>%
+  filter(str_detect(nombre, regex("parroquia|parròquia|convent", ignore_case = TRUE)))
+parroquias_conventos2$id <- c(13:19)
+
+parroquias_conventos2 <- parroquias_conventos2[,c(12,2,11)]
+recursos <- recursos[!recursos$nombre %in% parroquias_conventos2$nombre, ]
 head(recursos)
 ```
 
@@ -149,11 +179,31 @@ iglesias <- rbind(iglesias1,iglesias2)
 
 head(iglesias)
 ```
+#palacios y museos
+```{r}
+palacios_y_museos <- rbind(palacios_museos1,palacios_museos2)
+
+head(palacios_y_museos)
+```
+#Parroquias y conventos
+
+```{r}
+parroquias_conventos <- rbind(parroquias_conventos1,parroquias_conventos2)
+head(parroquias_conventos)
+```
+
+
+```{r}
+st_write(parroquias_conventos, "Datos_Procesados/parroquias_conventos.geojson")
+```
 
 ```{r}
 st_write(iglesias, "Datos_Procesados/iglesias.geojson")
 ```
 
+```{r}
+st_write(palacios_y_museos, "Datos_Procesados/palacios_y_museos.geojson")
+```
 
 ## Zonas de actividades
 
