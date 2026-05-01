@@ -7,8 +7,25 @@ output:
     toc: true
     toc_depth: 3
 ---
+# Miniproyecto
 
+## Carga e instalación de librerías y datos
+
+Instalación y carga de las librerías necesarias para la realizacion del trabajo
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+install.packages("leaflet")
+install.packages("tidyverse")
+install.packages("shiny")
+install.packages("plotly")
+library(leaflet)
+library(tidyverse)
+library(shiny)
+library(plotly)
+```
+
+
+Carga de los datos necesarios para la realizacion del proyecto
+```{r}
+
 ```
 
