@@ -70,7 +70,13 @@ cargar_shapefiles <- function(directorio) {
 
 ```{r}
 directorio <- "./Capas_procesadas/Capas_definitivas"
+archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para seleccionar el campo
+head(archivos$EMTxdistritos.shp)
+```
+Una vez cargados los archivos creamos el mapa de leaflet
 
-archivos <- cargar_shapefiles(directorio)
+```{r}
+mapa_1 <- leaflet()
+mapa_1
 ```
 
