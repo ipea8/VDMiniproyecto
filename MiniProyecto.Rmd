@@ -13,19 +13,64 @@ output:
 
 Instalación y carga de las librerías necesarias para la realizacion del trabajo
 ```{r setup, include=FALSE}
-install.packages("leaflet")
-install.packages("tidyverse")
-install.packages("shiny")
-install.packages("plotly")
 library(leaflet)
 library(tidyverse)
 library(shiny)
 library(plotly)
+library(sf)
 ```
 
 
 Carga de los datos necesarios para la realizacion del proyecto
 ```{r}
+library(sf)
 
+cargar_shapefiles <- function(directorio) {
+  # 1. Validar que el directorio existe
+  if (!dir.exists(directorio)) {
+    stop(paste("El directorio", directorio, "no existe."))
+  }
+  
+  # 2. Buscar archivos con extensión .shp usando expresiones regulares
+  # full.names = TRUE nos devuelve la ruta completa del archivo
+  rutas_archivos <- list.files(path = directorio, 
+                               pattern = "\\.shp$", 
+                               full.names = TRUE)
+  
+  if (length(rutas_archivos) == 0) {
+    message("No se encontraron archivos .shp en: ", directorio)
+    return(list())
+  }
+  
+  # 3. Crear una lista para almacenar los objetos espaciales (equivalente al diccionario en Python)
+  archivos_cargados <- list()
+  
+  # 4. Iterar y cargar cada archivo
+  for (ruta in rutas_archivos) {
+    nombre_archivo <- basename(ruta) # Extrae solo el nombre, ej: "mapa.shp"
+    
+    # Usamos tryCatch para que si un archivo falla, el bucle siga con los demás
+    tryCatch({
+      # st_read es la función correcta para importar el shapefile
+      # quiet = TRUE evita que R imprima metadatos en la consola por cada archivo
+      mapa <- st_read(ruta, quiet = TRUE)
+      
+      # Guardar en la lista usando el nombre del archivo como clave
+      archivos_cargados[[nombre_archivo]] <- mapa
+      message("Cargado exitosamente: ", nombre_archivo)
+      
+    }, error = function(e) {
+      message("Error al cargar ", nombre_archivo, ": ", e$message)
+    })
+  }
+  
+  return(archivos_cargados)
+}
+```
+
+```{r}
+directorio <- "./Capas_procesadas/Capas_definitivas"
+
+archivos <- cargar_shapefiles(directorio)
 ```
 
