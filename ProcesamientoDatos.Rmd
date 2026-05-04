@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Librerías
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, message=FALSE}
 library(sf)
 library(tidyverse)
 library(stringr)
@@ -28,12 +28,13 @@ library(stringr)
 distritos <- st_read("Datos_sin_procesar/distritos.geojson")
 distritos <- distritos[,-4]
 head(distritos)
-# Los distritos con id 17 (repetido varias veces), 18 y 19 no coinciden con 
-# los que están en el dataset de hoteles. Habría que ver si son relevantes o 
-# no y borrarlos en caso negativo.
 
-# Los distritos con id 17 estan repetidos por que son rasters diferentes, no hace falta eliminarlos
-# asi mismo  los distritos 18 y 19 son relevantes
+# Número de registros del dataframe
+nrow(distritos)
+# Si hay algún NA en el dataframe
+any(is.na(distritos))
+# Número de valores NA en cada columna
+colSums(is.na(distritos))
 ```
 
 ```{r}
@@ -47,6 +48,12 @@ st_write(distritos, "Datos_Procesados/distritos.geojson")
 hoteles <- read.csv("Datos_sin_procesar/hoteles_por_distritos.csv", sep=";")
 hoteles <- hoteles[,-c(11, 13)]
 head(hoteles)
+# Número de registros del dataframe
+nrow(hoteles)
+# Si hay algún NA en el dataframe
+any(is.na(hoteles))
+# Número de valores NA en cada columna
+colSums(is.na(hoteles))
 
 #Este data frame lo utilizaremos exclusivamente para la parte de gráficos y datos, no 
 #es necesario proyectarlo en Qgis.
@@ -63,6 +70,12 @@ st_write(hoteles, "Datos_Procesados/hoteles.geojson")
 emt <- st_read("Datos_sin_procesar/EMT.geojson")
 emt <- emt[,-c(3:5)]
 head(emt)
+# Número de registros del dataframe
+nrow(emt)
+# Si hay algún NA en el dataframe
+any(is.na(emt))
+# Número de valores NA en cada columna
+colSums(is.na(emt))
 ```
 
 ```{r}
@@ -75,8 +88,13 @@ st_write(emt, "Datos_Procesados/EMT.geojson")
 ```{r}
 verde <- st_read("Datos_sin_procesar/espacios_verdes.geojson")
 head(verde)
-
-#Conservaremos estos datos como elemento estetico, no es necesario para el objetivo del trabajo
+# Número de registros del dataframe
+nrow(verde)
+# Si hay algún NA en el dataframe
+any(is.na(verde))
+# Número de valores NA en cada columna
+colSums(is.na(verde))
+# Conservaremos estos datos como elemento estético, no es necesario para el objetivo del trabajo.
 ```
 
 ```{r}
@@ -89,8 +107,12 @@ st_write(verde, "Datos_Procesados/espacios_verdes.geojson")
 ```{r}
 fuentes <- st_read("Datos_sin_procesar/fuentes_agua.geojson")
 head(fuentes)
-
-#estos datos estan correctos
+# Número de registros del dataframe
+nrow(fuentes)
+# Si hay algún NA en el dataframe
+any(is.na(fuentes))
+# Número de valores NA en cada columna
+colSums(is.na(fuentes))
 ```
 
 ```{r}
@@ -102,7 +124,6 @@ st_write(fuentes, "Datos_Procesados/fuentes_agua.geojson")
 
 ```{r}
 monumentos <- st_read("Datos_sin_procesar/monumentos_turisticos.geojson")
-head(monumentos)
 
 monumentos_repetidos <- c('ESGLÉSIA DEL SAGRAT COR DE JESÚS (PATRAIX)',"ESGLÉSIA PARROQUIAL DE L'ANTIC CONVENT DE SANTA MARIA DE JESÚS",'PALAU DE LA MÚSICA','ANTIC MONESTIR DE SANT MIQUEL DELS REIS','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL SAGRAT COR','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE SANTA ANNA (BORBOTÓ)','ESGLÉSIA PARROQUIAL DELS SANTS ABDÓ I SENENT','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DE GRÀCIA - LA TORRE',"ESGLÉSIA DEL CRIST DE L'AGONIA DEL FORN D'ALCEDO",'ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DEL ROSARI (LEPANT-CASTELLAR)','BIOPARC','CIUTAT DE LES ARTS I LES CIÈNCIES','PALAU DE CONGRESSOS','12-PARROQUIA SANTIAGO APÓSTOL','CASA MUSEU BLASCO IBÁÑEZ','ASIL DE SANT JOAN DE DÉU','ESGLÉSIA PARROQUIAL DE LA MARE DE DÉU DELS ÀNGELS (EL CABANYAL)','MUSEU DE LA SETMANA SANTA MARINERA')
 
@@ -130,6 +151,14 @@ parroquias_conventos1$id <- c(1:12)
 
 parroquias_conventos1 <- parroquias_conventos1[,c(10,2,9)]
 monumentos <- monumentos[!monumentos$nombre %in% parroquias_conventos1$nombre, ]
+
+head(monumentos)
+# Número de registros del dataframe
+nrow(monumentos)
+# Si hay algún NA en el dataframe
+any(is.na(monumentos))
+# Número de valores NA en cada columna
+colSums(is.na(monumentos))
 ```
 
 ```{r}
@@ -164,7 +193,14 @@ parroquias_conventos2$id <- c(13:19)
 
 parroquias_conventos2 <- parroquias_conventos2[,c(12,2,11)]
 recursos <- recursos[!recursos$nombre %in% parroquias_conventos2$nombre, ]
+
 head(recursos)
+# Número de registros del dataframe
+nrow(recursos)
+# Si hay algún NA en el dataframe
+any(is.na(recursos))
+# Número de valores NA en cada columna
+colSums(is.na(recursos))
 ```
 
 ```{r}
@@ -178,18 +214,47 @@ st_write(recursos, "Datos_Procesados/recursos_turisticos.geojson")
 iglesias <- rbind(iglesias1,iglesias2)
 
 head(iglesias)
+# Número de registros del dataframe
+nrow(iglesias)
+# Si hay algún NA en el dataframe
+any(is.na(iglesias))
+# Número de valores NA en cada columna
+colSums(is.na(iglesias))
 ```
-#palacios y museos
+
+```{r}
+st_write(iglesias, "Datos_Procesados/iglesias.geojson")
+```
+
+## Palacios y museos
 ```{r}
 palacios_y_museos <- rbind(palacios_museos1,palacios_museos2)
 
 head(palacios_y_museos)
+# Número de registros del dataframe
+nrow(palacios_y_museos)
+# Si hay algún NA en el dataframe
+any(is.na(palacios_y_museos))
+# Número de valores NA en cada columna
+colSums(is.na(palacios_y_museos))
 ```
-#Parroquias y conventos
+
+```{r}
+st_write(palacios_y_museos, "Datos_Procesados/palacios_y_museos.geojson")
+```
+
+## Parroquias y conventos
 
 ```{r}
 parroquias_conventos <- rbind(parroquias_conventos1,parroquias_conventos2)
+
 head(parroquias_conventos)
+# Número de registros del dataframe
+nrow(parroquias_conventos)
+# Si hay algún NA en el dataframe
+any(is.na(parroquias_conventos))
+# Número de valores NA en cada columna
+colSums(is.na(parroquias_conventos))
 ```
 
 
@@ -197,19 +262,18 @@ head(parroquias_conventos)
 st_write(parroquias_conventos, "Datos_Procesados/parroquias_conventos.geojson")
 ```
 
-```{r}
-st_write(iglesias, "Datos_Procesados/iglesias.geojson")
-```
-
-```{r}
-st_write(palacios_y_museos, "Datos_Procesados/palacios_y_museos.geojson")
-```
-
 ## Zonas de actividades
 
 ```{r}
 actividades <- st_read("Datos_sin_procesar/zonas_actividades.geojson")
+
 head(actividades)
+# Número de registros del dataframe
+nrow(actividades)
+# Si hay algún NA en el dataframe
+any(is.na(actividades))
+# Número de valores NA en cada columna
+colSums(is.na(actividades))
 # Estos datos son sobre las fallas, por lo que no nos interesan.
 ```
 
@@ -219,7 +283,14 @@ head(actividades)
 ```{r}
 juego <- st_read("Datos_sin_procesar/zonas_juego_infantiles.geojson")
 juego <- juego[, -c(8, 9, 10, 11, 12)] # Columnas que no sirven
+
 head(juego)
+# Número de registros del dataframe
+nrow(juego)
+# Si hay algún NA en el dataframe
+any(is.na(juego))
+# Número de valores NA en cada columna
+colSums(is.na(juego))
 ```
 
 ```{r}
