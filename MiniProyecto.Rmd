@@ -16,15 +16,15 @@ Instalación y carga de las librerías necesarias para la realizacion del trabaj
 library(leaflet)
 library(tidyverse)
 library(shiny)
+library(shinythemes)
 library(plotly)
 library(sf)
 ```
 
 
-Carga de los datos necesarios para la realizacion del proyecto
-```{r}
-library(sf)
+## Carga de los datos necesarios para la realización del proyecto
 
+```{r}
 cargar_shapefiles <- function(directorio) {
   # 1. Validar que el directorio existe
   if (!dir.exists(directorio)) {
@@ -68,15 +68,50 @@ cargar_shapefiles <- function(directorio) {
 }
 ```
 
+### Ejemplo de archivo cargado
+
 ```{r}
 directorio <- "./Capas_procesadas/Capas_definitivas"
 archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para seleccionar el campo
 head(archivos$EMTxdistritos.shp)
 ```
+
 Una vez cargados los archivos creamos el mapa de leaflet
 
 ```{r}
 mapa_1 <- leaflet()
 mapa_1
+```
+
+```{r}
+ui <- fluidPage(
+  theme = shinytheme("flatly"),
+  
+  shinythemes::themeSelector(),
+  
+  titlePanel("EMT y Lugares de interés de Valencia"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Selecciona un distrito para comenzar."),
+      selectInput("distrito", "Distritos:", 
+                  choices = c("", archivos$distritos_re.shp$nombre)),
+      
+      hr(),
+      
+      helpText("¿Qué buscas?"),
+      selectInput("tipo_lugar", "Tipo de lugar:",
+                  choices = c("", "Fuentes de agua", "Iglesias", "Palacios y museos",
+                              "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
+      
+      hr()
+    ),
+    mainPanel()
+  )
+)
+
+server <- function(input, output, session) {}
+
+shinyApp(ui, server)
 ```
 
