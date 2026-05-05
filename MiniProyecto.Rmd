@@ -85,7 +85,6 @@ mapa_1
 
 ```{r}
 ui <- fluidPage(
-  theme = shinytheme("flatly"),
   
   shinythemes::themeSelector(),
   
@@ -102,15 +101,60 @@ ui <- fluidPage(
       helpText("¿Qué buscas?"),
       selectInput("tipo_lugar", "Tipo de lugar:",
                   choices = c("", "Fuentes de agua", "Iglesias", "Palacios y museos",
-                              "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
-      
-      hr()
+                              "Parroquias y conventos", "Zonas de juego y parques", "Otros"))
     ),
-    mainPanel()
+    mainPanel(
+      leafletOutput("mapa", height = "600px")
+    )
   )
 )
 
-server <- function(input, output, session) {}
+server <- function(input, output, session) {
+  
+  output$mapa <- renderLeaflet({
+    # Transformamos a coordenadas
+    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    
+    # Limitamos el zoom para que el usuario no se vaya a curiosear a Australia
+    mapa <- leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
+      addProviderTiles(providers$CartoDB.Voyager) %>%
+      # Vista centrada en la ciudad de Valencia
+      setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
+      # Añadimos la capa de distritos con cierta transparencia
+      addPolygons(
+        data = distritos_trans,
+        color = "gray",
+        weight = 1.5,
+        opacity = 0.3,
+        fillColor = "lightblue",
+        fillOpacity = 0.3)
+  })
+  
+  observeEvent(input$distrito, {
+    
+    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    
+    # Limpiamos cualquier resaltado previo del mapa
+    leafletProxy("mapa") %>%
+      clearGroup("resaltado")
+      
+    # Filtramos directamente el polígono
+    dist_sel <- distritos_trans[distritos_trans$nombre == input$distrito, ]
+      
+    # Añadimos el nuevo resaltado
+    leafletProxy("mapa") %>%
+    addPolygons(
+      data = dist_sel,
+      color = "black",
+      weight = 2,
+      opacity = 0.7,
+      fillColor = "lightblue",
+      fillOpacity = 0.5,
+      group = "resaltado"
+    )
+  })
+  
+}
 
 shinyApp(ui, server)
 ```
