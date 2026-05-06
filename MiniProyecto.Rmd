@@ -117,16 +117,7 @@ server <- function(input, output, session) {
       addProviderTiles(providers$CartoDB.Voyager) %>%
       # Vista centrada en la ciudad de Valencia
       setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
-      # Añadimos la capa de distritos con cierta transparencia
-      addPolygons(
-        data = distritos_trans,
-        color = "gray",
-        weight = 1.5,
-        opacity = 0.3,
-        fillColor = "lightblue",
-        fillOpacity = 0.3) %>%
-      
-      # Añadimos la capa de zonas verdes
+       # Añadimos la capa de zonas verdes
       addPolygons(
         data = verdes_trans,
         color = "green",
@@ -134,7 +125,46 @@ server <- function(input, output, session) {
         opacity = 0, # Hacemos que no se vea por defecto para resaltarlo más adelante al marcar la casilla
         fillColor = "lightgreen",
         fillOpacity = 0
+      ) %>%
+      
+      # Añadimos la capa de distritos con cierta transparencia
+      addPolygons(
+        data = distritos_trans,
+        color = "gray",
+        weight = 1.5,
+        opacity = 0.3,
+        fillColor = "lightblue",
+        fillOpacity = 0.3)
+      
+     
+  })
+  # Selector de zonas verdes
+  
+    observeEvent(input$zonas_verdes, {
+    # Cargamos los datos
+    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
+    
+    # Limpiamos las zonas verdes que se muestran
+    leafletProxy("mapa") %>%
+      clearGroup("zonas_verdes")
+    
+    # Añadimos el resaltado si la casilla está marcada
+    if (input$zonas_verdes){
+      leafletProxy("mapa") %>%
+      addPolygons(
+        data = verdes_trans,
+        color = "green",
+        weight = 1.5,
+        opacity = 0.4,
+        fillColor = "lightgreen",
+        fillOpacity = 0.3,
+        group = "zonas_verdes"
       )
+    }
+    else {
+      leafletProxy("mapa") %>%
+        clearGroup("zonas_verdes")
+    }
   })
   
   # Selector de distrito
@@ -162,33 +192,8 @@ server <- function(input, output, session) {
     )
   })
   
-  # Selector de zonas verdes
-  observeEvent(input$zonas_verdes, {
-    # Cargamos los datos
-    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
-    
-    # Limpiamos las zonas verdes que se muestran
-    leafletProxy("mapa") %>%
-      clearGroup("zonas_verdes")
-    
-    # Añadimos el resaltado si la casilla está marcada
-    if (input$zonas_verdes){
-      leafletProxy("mapa") %>%
-      addPolygons(
-        data = verdes_trans,
-        color = "green",
-        weight = 1.5,
-        opacity = 0.7,
-        fillColor = "lightgreen",
-        fillOpacity = 0.7,
-        group = "zonas_verdes"
-      )
-    }
-    else {
-      leafletProxy("mapa") %>%
-        clearGroup("zonas_verdes")
-    }
-  })
+
+
   
 }
 
