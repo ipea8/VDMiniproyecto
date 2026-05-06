@@ -193,6 +193,10 @@ server <- function(input, output, session) {
         # Filtramos las fuentes por el distrito seleccionado
         fuentes_sel <- fuentes_trans %>% filter(coddistrit == dist_sel$coddistrit)
         
+        # Limpiamos puntos
+        leafletProxy("mapa") %>%
+          clearGroup("seleccion")
+        
         # Añadimos los puntos
         leafletProxy("mapa") %>%
           addCircleMarkers(
@@ -200,7 +204,7 @@ server <- function(input, output, session) {
           radius = 0.5,
           color = "darkblue",
           opacity = 1,
-          group = "resaltado"
+          group = "seleccion"
         )
       }
   })
