@@ -95,7 +95,9 @@ ui <- fluidPage(
       helpText("¿Qué buscas?"),
       selectInput("tipo_lugar", "Tipo de lugar:",
                   choices = c("", "Fuentes de agua", "Iglesias", "Palacios y museos",
-                              "Parroquias y conventos", "Zonas de juego y parques", "Otros"))
+                              "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
+      
+      checkboxInput("zonas_verdes", "Ver zonas verdes")
     ),
     mainPanel(
       leafletOutput("mapa", height = "600px")
@@ -129,12 +131,13 @@ server <- function(input, output, session) {
         data = verdes_trans,
         color = "green",
         weight = 1.5,
-        opacity = 0.2, # Queremos que resalte el distrito sobre las zonas verdes pero que se sigan viendo
+        opacity = 0, # Hacemos que no se vea por defecto para resaltarlo más adelante al marcar la casilla
         fillColor = "lightgreen",
-        fillOpacity = 0.3
+        fillOpacity = 0
       )
   })
   
+  # Selector de distrito
   observeEvent(input$distrito, {
     
     distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
@@ -157,6 +160,34 @@ server <- function(input, output, session) {
       fillOpacity = 0.5,
       group = "resaltado"
     )
+  })
+  
+  # Selector de zonas verdes
+  observeEvent(input$zonas_verdes, {
+    # Cargamos los datos
+    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
+    
+    # Limpiamos las zonas verdes que se muestran
+    leafletProxy("mapa") %>%
+      clearGroup("zonas_verdes")
+    
+    # Añadimos el resaltado si la casilla está marcada
+    if (input$zonas_verdes){
+      leafletProxy("mapa") %>%
+      addPolygons(
+        data = verdes_trans,
+        color = "green",
+        weight = 1.5,
+        opacity = 0.7,
+        fillColor = "lightgreen",
+        fillOpacity = 0.7,
+        group = "zonas_verdes"
+      )
+    }
+    else {
+      leafletProxy("mapa") %>%
+        clearGroup("zonas_verdes")
+    }
   })
   
 }
