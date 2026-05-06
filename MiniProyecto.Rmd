@@ -13,19 +13,149 @@ output:
 
 Instalación y carga de las librerías necesarias para la realizacion del trabajo
 ```{r setup, include=FALSE}
-install.packages("leaflet")
-install.packages("tidyverse")
-install.packages("shiny")
-install.packages("plotly")
 library(leaflet)
 library(tidyverse)
 library(shiny)
+library(shinythemes)
 library(plotly)
+library(sf)
 ```
 
 
-Carga de los datos necesarios para la realizacion del proyecto
-```{r}
+## Carga de los datos necesarios para la realización del proyecto
 
+```{r}
+cargar_shapefiles <- function(directorio) {
+  # 1. Validar que el directorio existe
+  if (!dir.exists(directorio)) {
+    stop(paste("El directorio", directorio, "no existe."))
+  }
+  
+  # 2. Buscar archivos con extensión .shp usando expresiones regulares
+  # full.names = TRUE nos devuelve la ruta completa del archivo
+  rutas_archivos <- list.files(path = directorio, 
+                               pattern = "\\.shp$", 
+                               full.names = TRUE)
+  
+  if (length(rutas_archivos) == 0) {
+    message("No se encontraron archivos .shp en: ", directorio)
+    return(list())
+  }
+  
+  # 3. Crear una lista para almacenar los objetos espaciales (equivalente al diccionario en Python)
+  archivos_cargados <- list()
+  
+  # 4. Iterar y cargar cada archivo
+  for (ruta in rutas_archivos) {
+    nombre_archivo <- basename(ruta) # Extrae solo el nombre, ej: "mapa.shp"
+    
+    # Usamos tryCatch para que si un archivo falla, el bucle siga con los demás
+    tryCatch({
+      # st_read es la función correcta para importar el shapefile
+      # quiet = TRUE evita que R imprima metadatos en la consola por cada archivo
+      mapa <- st_read(ruta, quiet = TRUE)
+      
+      # Guardar en la lista usando el nombre del archivo como clave
+      archivos_cargados[[nombre_archivo]] <- mapa
+      message("Cargado exitosamente: ", nombre_archivo)
+      
+    }, error = function(e) {
+      message("Error al cargar ", nombre_archivo, ": ", e$message)
+    })
+  }
+  
+  return(archivos_cargados)
+}
+```
+
+### Ejemplo de archivo cargado
+
+```{r}
+directorio <- "./Capas_procesadas/Capas_definitivas"
+archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para seleccionar el campo
+head(archivos$EMTxdistritos.shp)
+```
+
+Una vez cargados los archivos creamos el mapa de leaflet
+
+```{r}
+mapa_1 <- leaflet()
+mapa_1
+```
+
+```{r}
+ui <- fluidPage(
+  
+  shinythemes::themeSelector(),
+  
+  titlePanel("EMT y Lugares de interés de Valencia"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Selecciona un distrito para comenzar."),
+      selectInput("distrito", "Distritos:", 
+                  choices = c("", archivos$distritos_re.shp$nombre)),
+      
+      hr(),
+      
+      helpText("¿Qué buscas?"),
+      selectInput("tipo_lugar", "Tipo de lugar:",
+                  choices = c("", "Fuentes de agua", "Iglesias", "Palacios y museos",
+                              "Parroquias y conventos", "Zonas de juego y parques", "Otros"))
+    ),
+    mainPanel(
+      leafletOutput("mapa", height = "600px")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  
+  output$mapa <- renderLeaflet({
+    # Transformamos a coordenadas
+    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    
+    # Limitamos el zoom para que el usuario no se vaya a curiosear a Australia
+    mapa <- leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
+      addProviderTiles(providers$CartoDB.Voyager) %>%
+      # Vista centrada en la ciudad de Valencia
+      setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
+      # Añadimos la capa de distritos con cierta transparencia
+      addPolygons(
+        data = distritos_trans,
+        color = "gray",
+        weight = 1.5,
+        opacity = 0.3,
+        fillColor = "lightblue",
+        fillOpacity = 0.3)
+  })
+  
+  observeEvent(input$distrito, {
+    
+    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    
+    # Limpiamos cualquier resaltado previo del mapa
+    leafletProxy("mapa") %>%
+      clearGroup("resaltado")
+      
+    # Filtramos directamente el polígono
+    dist_sel <- distritos_trans[distritos_trans$nombre == input$distrito, ]
+      
+    # Añadimos el nuevo resaltado
+    leafletProxy("mapa") %>%
+    addPolygons(
+      data = dist_sel,
+      color = "black",
+      weight = 2,
+      opacity = 0.7,
+      fillColor = "lightblue",
+      fillOpacity = 0.5,
+      group = "resaltado"
+    )
+  })
+  
+}
+
+shinyApp(ui, server)
 ```
 
