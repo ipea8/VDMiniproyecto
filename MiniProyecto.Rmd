@@ -76,13 +76,7 @@ archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el a
 head(archivos$EMTxdistritos.shp)
 ```
 
-Una vez cargados los archivos creamos el mapa de leaflet
-
-```{r}
-mapa_1 <- leaflet()
-mapa_1
-```
-
+Una vez cargados los archivos creamos la página que contiene el mapa.
 ```{r}
 ui <- fluidPage(
   
@@ -114,6 +108,7 @@ server <- function(input, output, session) {
   output$mapa <- renderLeaflet({
     # Transformamos a coordenadas
     distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
     
     # Limitamos el zoom para que el usuario no se vaya a curiosear a Australia
     mapa <- leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
@@ -127,7 +122,17 @@ server <- function(input, output, session) {
         weight = 1.5,
         opacity = 0.3,
         fillColor = "lightblue",
-        fillOpacity = 0.3)
+        fillOpacity = 0.3) %>%
+      
+      # Añadimos la capa de zonas verdes
+      addPolygons(
+        data = verdes_trans,
+        color = "green",
+        weight = 1.5,
+        opacity = 0.2, # Queremos que resalte el distrito sobre las zonas verdes pero que se sigan viendo
+        fillColor = "lightgreen",
+        fillOpacity = 0.3
+      )
   })
   
   observeEvent(input$distrito, {
