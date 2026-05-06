@@ -106,7 +106,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  
+
   output$mapa <- renderLeaflet({
     # Transformamos a coordenadas
     distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
@@ -119,25 +119,6 @@ server <- function(input, output, session) {
       addProviderTiles(providers$CartoDB.Voyager) %>%
       # Vista centrada en la ciudad de Valencia
       setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
-      
-      # Añadimos la capa de fuentes
-      
-      addCircleMarkers(
-        data = fuentes_trans,
-        color = "darkblue",
-        radius = 0.5,
-        opacity = 1
-      ) %>%
-      
-       # Añadimos la capa de zonas verdes
-      addPolygons(
-        data = verdes_trans,
-        color = "green",
-        weight = 1.5,
-        opacity = 0, # Hacemos que no se vea por defecto para resaltarlo más adelante al marcar la casilla
-        fillColor = "lightgreen",
-        fillOpacity = 0
-      ) %>%
       
       # Añadimos la capa de distritos con cierta transparencia
       addPolygons(
@@ -183,7 +164,10 @@ server <- function(input, output, session) {
   # Selector de distrito
   observeEvent(input$distrito, {
     
+    # Cargamos los datos necesarios
     distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+    fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
+    fuentes_trans <- st_cast(fuentes_trans, "POINT")
     
     # Limpiamos cualquier resaltado previo del mapa
     leafletProxy("mapa") %>%
@@ -191,7 +175,7 @@ server <- function(input, output, session) {
       
     # Filtramos directamente el polígono
     dist_sel <- distritos_trans[distritos_trans$nombre == input$distrito, ]
-      
+    
     # Añadimos el nuevo resaltado
     leafletProxy("mapa") %>%
     addPolygons(
@@ -203,6 +187,22 @@ server <- function(input, output, session) {
       fillOpacity = 0.25,
       group = "resaltado"
     )
+    
+    # Añadimos la seleccion de fuentes
+      if (input$tipo_lugar == "Fuentes de agua") {
+        # Filtramos las fuentes por el distrito seleccionado
+        fuentes_sel <- fuentes_trans %>% filter(coddistrit == dist_sel$coddistrit)
+        
+        # Añadimos los puntos
+        leafletProxy("mapa") %>%
+          addCircleMarkers(
+          data = fuentes_sel,
+          radius = 0.5,
+          color = "darkblue",
+          opacity = 1,
+          group = "resaltado"
+        )
+      }
   })
   
 
