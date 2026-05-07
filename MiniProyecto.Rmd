@@ -66,38 +66,46 @@ cargar_shapefiles <- function(directorio) {
   
   return(archivos_cargados)
 }
-```
 
-### Ejemplo de archivo cargado
 
-```{r}
 directorio <- "./Capas_procesadas/Capas_definitivas"
-archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para seleccionar el campo
-head(archivos$EMTxdistritos.shp)
+archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para 
 ```
+
+
+### Transformacion de los datasets a utilizar
+```{r}
+# Transformamos a coordenadas
+distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
+verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
+fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
+fuentes_trans <- st_cast(fuentes_trans, "POINT")
+paradas_trans <- st_transform(archivos$EMTxdistritos.shp, crs = 4326)
+paradas_trans <- st_cast(paradas_trans, "POINT")
+iglesias_trans <- st_transform(archivos$Iglesias_ID_parada_agrupadas.shp, crs = 4326)
+iglesias_trans <- st_cast(iglesias_trans, "POINT")
+```
+
+
+
 
 Una vez cargados los archivos creamos la página que contiene el mapa.
 ```{r}
+
 ui <- fluidPage(
-  
   shinythemes::themeSelector(),
-  
   titlePanel("EMT y Lugares de interés de Valencia"),
-  
   sidebarLayout(
     sidebarPanel(
       helpText("Selecciona un distrito para comenzar."),
       selectInput("distrito", "Distritos:", 
-                  choices = c("", archivos$distritos_re.shp$nombre)),
-      
+                  choices = c("Selecciona uno" = "", distritos_trans$nombre)),
       hr(),
-      
       helpText("¿Qué buscas?"),
       selectInput("tipo_lugar", "Tipo de lugar:",
-                  choices = c("", "Fuentes de agua", "Iglesias", "Palacios y museos",
+                  choices = c("Ninguno" = "", "Fuentes de agua", "Iglesias", "Palacios y museos",
                               "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
-      
-      checkboxInput("zonas_verdes", "Ver zonas verdes")
+      checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE)
     ),
     mainPanel(
       leafletOutput("mapa", height = "600px")
@@ -105,113 +113,100 @@ ui <- fluidPage(
   )
 )
 
-server <- function(input, output, session) {
 
+server <- function(input, output, session) {
+  
+  # A. MAPA BASE (Solo una vez)
   output$mapa <- renderLeaflet({
-    # Transformamos a coordenadas
-    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
-    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
-    fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
-    fuentes_trans <- st_cast(fuentes_trans, "POINT")
-    
-    # Limitamos el zoom para que el usuario no se vaya a curiosear a Australia
-    mapa <- leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
+    leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
       addProviderTiles(providers$CartoDB.Voyager) %>%
-      # Vista centrada en la ciudad de Valencia
       setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
-      
-      # Añadimos la capa de distritos con cierta transparencia
       addPolygons(
         data = distritos_trans,
-        color = "gray",
-        weight = 1.5,
-        opacity = 0.3,
-        fillColor = "lightblue",
-        fillOpacity = 0.3)
-      
-      
-     
-  })
-  # Selector de zonas verdes
-  
-    observeEvent(input$zonas_verdes, {
-    # Cargamos los datos
-    verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
-    
-    # Limpiamos las zonas verdes que se muestran
-    leafletProxy("mapa") %>%
-      clearGroup("zonas_verdes")
-    
-    # Añadimos el resaltado si la casilla está marcada
-    if (input$zonas_verdes){
-      leafletProxy("mapa") %>%
-      addPolygons(
-        data = verdes_trans,
-        color = "green",
-        weight = 1.5,
-        opacity = 0.4,
-        fillColor = "lightgreen",
-        fillOpacity = 0.3,
-        group = "zonas_verdes"
+        color = "gray", weight = 1, opacity = 0.2,
+        fillColor = "lightblue", fillOpacity = 0.1,
+        group = "base_distritos"
       )
-    }
-    else {
-      leafletProxy("mapa") %>%
-        clearGroup("zonas_verdes")
-    }
   })
-  
-  # Selector de distrito
-  observeEvent(input$distrito, {
+
+
+  # Preparamos los datos
+  datos_distrito <- reactive({
+    req(input$distrito) # Si no hay distrito, no hace nada
     
-    # Cargamos los datos necesarios
-    distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
-    fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
-    fuentes_trans <- st_cast(fuentes_trans, "POINT")
+    dist_sel <- distritos_trans %>% filter(nombre == input$distrito)
+    cod <- dist_sel$coddistrit
     
-    # Limpiamos cualquier resaltado previo del mapa
-    leafletProxy("mapa") %>%
-      clearGroup("resaltado")
-      
-    # Filtramos directamente el polígono
-    dist_sel <- distritos_trans[distritos_trans$nombre == input$distrito, ]
-    
-    # Añadimos el nuevo resaltado
-    leafletProxy("mapa") %>%
-    addPolygons(
-      data = dist_sel,
-      color = "black",
-      weight = 2,
-      opacity = 0.7,
-      fillColor = "lightblue",
-      fillOpacity = 0.25,
-      group = "resaltado"
+    # Devolvemos una lista con todo lo filtrado para ese distrito
+    list(
+      poligono = dist_sel,
+      fuentes  = fuentes_trans %>% filter(coddistrit == cod),
+      iglesias = iglesias_trans %>% filter(coddistrit == cod),
+      paradas  = paradas_trans %>% filter(coddistrit == cod)
     )
+  })
+
+  # C. OBSERVAR DISTRITO (Dibuja el borde negro)
+  observeEvent(input$distrito, {
+    req(input$distrito)
     
-    # Añadimos la seleccion de fuentes
-      if (input$tipo_lugar == "Fuentes de agua") {
-        # Filtramos las fuentes por el distrito seleccionado
-        fuentes_sel <- fuentes_trans %>% filter(coddistrit == dist_sel$coddistrit)
-        
-        # Limpiamos puntos
-        leafletProxy("mapa") %>%
-          clearGroup("seleccion")
-        
-        # Añadimos los puntos
-        leafletProxy("mapa") %>%
-          addCircleMarkers(
-          data = fuentes_sel,
-          radius = 0.5,
-          color = "darkblue",
+    leafletProxy("mapa") %>%
+      clearGroup("resaltado") %>%
+      addPolygons(
+        data = datos_distrito()$poligono,
+        color = "black", weight = 3, opacity = 1,
+        fillColor = "lightblue",
+        fillOpacity = 0.45,
+        group = "resaltado"
+      )
+  })
+
+  # D. OBSERVAR LUGARES (Dibuja los puntos)
+  observeEvent(list(input$distrito, input$tipo_lugar), {
+    proxy <- leafletProxy("mapa") %>% 
+      clearGroup("seleccion") %>% 
+      clearGroup("paradas")
+    
+    # Solo dibujamos si hay un distrito y un lugar seleccionado
+    req(input$distrito, input$tipo_lugar)
+    
+    if (input$tipo_lugar == "Fuentes de agua") {
+      proxy %>% addCircleMarkers(
+        data = datos_distrito()$fuentes,
+        radius = 0.5, color = "darkblue",
+        opacity = 1, group = "seleccion"
+      )
+    } else if (input$tipo_lugar == "Iglesias") {
+      proxy %>% 
+        addCircleMarkers(
+          data = datos_distrito()$iglesias,
+          radius = 0.5, color = "white",
           opacity = 1,
           group = "seleccion"
+        ) %>%
+        addCircleMarkers(
+          data = datos_distrito()$paradas,
+          radius = 0.5, color = "red",
+          group = "paradas",
+          opacity = 1
         )
-      }
+    }
   })
-  
 
-
-  
+  # E. ZONAS VERDES (Capa independiente)
+  observeEvent(input$zonas_verdes, {
+    proxy <- leafletProxy("mapa")
+    
+    if (input$zonas_verdes) {
+      proxy %>% addPolygons(
+        data = verdes_trans,
+        color = "green", weight = 1, fillColor = "green",
+        fillOpacity = 0.2, group = "zonas_verdes"
+      )
+    } else {
+      proxy %>% clearGroup("zonas_verdes")
+    }
+  })
 }
 
 shinyApp(ui, server)
