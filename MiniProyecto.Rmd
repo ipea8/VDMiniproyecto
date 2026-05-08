@@ -87,6 +87,14 @@ paradas_trans <- st_transform(archivos$EMTxdistritos.shp, crs = 4326)
 paradas_trans <- st_cast(paradas_trans, "POINT")
 iglesias_trans <- st_transform(archivos$Iglesias_ID_parada_agrupadas.shp, crs = 4326)
 iglesias_trans <- st_cast(iglesias_trans, "POINT")
+palacios_trans <- st_transform(archivos$palaciosymuseos_ID_Paradas_agrupadas.shp, crs = 4326)
+palacios_trans <- st_cast(palacios_trans, "POINT")
+parroquias_trans <- st_transform(archivos$parroquiasyconventos_ID_Parada_agrupados.shp, crs = 4326)
+parroquias_trans <- st_cast(parroquias_trans, "POINT")
+parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
+parques_trans <- st_cast(parques_trans, "POINT")
+otros_trans <- st_transform(archivos$Monumentos_ID_parada_agrupados.shp, crs = 4326)
+otros_trans <- st_cast(otros_trans, "POINT")
 ```
 
 
@@ -179,7 +187,11 @@ server <- function(input, output, session) {
       poligono = dist_sel,
       fuentes  = fuentes_trans %>% filter(coddistrit == cod),
       iglesias = iglesias_trans %>% filter(coddistrit == cod),
-      paradas  = paradas_trans %>% filter(coddistrit == cod)
+      paradas  = paradas_trans %>% filter(coddistrit == cod),
+      palacios = palacios_trans %>% filter(coddistrit == cod),
+      parroquias = parroquias_trans %>% filter(coddistrit == cod),
+      parques = parques_trans %>% filter(coddistrit == cod),
+      otros = otros_trans %>% filter(coddistrit == cod)
     )
   })
 
@@ -228,6 +240,67 @@ server <- function(input, output, session) {
           opacity = 1
         )
     }
+    
+    else if (input$tipo_lugar == "Palacios y museos") {
+    proxy %>% 
+        addCircleMarkers(
+          data = datos_distrito()$palacios,
+          radius = 0.5, color = "black",
+          opacity = 1,
+          group = "seleccion"
+        ) %>%
+        addCircleMarkers(
+          data = datos_distrito()$paradas,
+          radius = 0.5, color = "red",
+          group = "paradas",
+          opacity = 1) 
+    }
+    
+    else if (input$tipo_lugar == "Parroquias y conventos") {
+    proxy %>% 
+        addCircleMarkers(
+          data = datos_distrito()$parroquias,
+          radius = 0.5, color = "blue",
+          opacity = 1,
+          group = "seleccion"
+        ) %>%
+        addCircleMarkers(
+          data = datos_distrito()$paradas,
+          radius = 0.5, color = "red",
+          group = "paradas",
+          opacity = 1) 
+    }
+    
+    else if (input$tipo_lugar == "Zonas de juego y parques") {
+    proxy %>% 
+        addCircleMarkers(
+          data = datos_distrito()$parques,
+          radius = 0.5, color = "orange",
+          opacity = 1,
+          group = "seleccion"
+        ) %>%
+        addCircleMarkers(
+          data = datos_distrito()$paradas,
+          radius = 0.5, color = "red",
+          group = "paradas",
+          opacity = 1) 
+    }
+    
+    else if (input$tipo_lugar == "Otros") {
+    proxy %>% 
+        addCircleMarkers(
+          data = datos_distrito()$otros,
+          radius = 0.5, color = "purple",
+          opacity = 1,
+          group = "seleccion"
+        ) %>%
+        addCircleMarkers(
+          data = datos_distrito()$paradas,
+          radius = 0.5, color = "red",
+          group = "paradas",
+          opacity = 1) 
+    }
+    
   })
 
   # E. ZONAS VERDES (Capa independiente)
