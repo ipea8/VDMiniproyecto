@@ -69,7 +69,10 @@ cargar_shapefiles <- function(directorio) {
 
 
 directorio <- "./Capas_procesadas/Capas_definitivas"
-archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para 
+archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para
+
+# Carga del archivo de hoteles para las gráficas extra
+data_hoteles <- st_read("Datos_Procesados/hoteles.geojson")
 ```
 
 
@@ -108,13 +111,47 @@ ui <- fluidPage(
       checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE)
     ),
     mainPanel(
-      leafletOutput("mapa", height = "600px")
+      leafletOutput("mapa", height = "600px"),
+      plotlyOutput("hoteles")
     )
   )
 )
 
 
 server <- function(input, output, session) {
+  
+  # 1. Gráfica de hoteles
+  output$hoteles <- renderPlotly({
+    # Transformamos el dataset a un dataframe
+    df_limpio <- data_hoteles %>%
+      as.data.frame() %>% 
+      select(-geometry)
+    # Convierte el dataset a formato largo
+    df_long <- df_limpio %>%
+      pivot_longer(
+        cols = ends_with("estrella") | ends_with("estrellas"), 
+        names_to = "categoria_estrellas", 
+        values_to = "conteo"
+      )
+    # Creación de la gráfica con ggplot
+    gg <- ggplot(df_long, aes(x = categoria_estrellas, y = conteo, fill = categoria_estrellas)) +
+      geom_bar(stat = "identity") +
+      facet_wrap(~DISTRITO) +
+      labs(
+        title = "Hoteles por Distrito en Valencia",
+        x = "Distritos", 
+        y = "Número de Hoteles", 
+        fill = "Estrellas"
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()
+      ) +
+      scale_fill_brewer(palette = "YlOrRd")
+    # Transformación a plotly para hacerla interactiva
+    ggplotly(gg)
+  })
   
   # A. MAPA BASE (Solo una vez)
   output$mapa <- renderLeaflet({
