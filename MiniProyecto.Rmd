@@ -103,24 +103,46 @@ otros_trans <- st_cast(otros_trans, "POINT")
 Una vez cargados los archivos creamos la página que contiene el mapa.
 ```{r}
 
-ui <- fluidPage(
-  shinythemes::themeSelector(),
-  titlePanel("EMT y Lugares de interés de Valencia"),
-  sidebarLayout(
-    sidebarPanel(
-      helpText("Selecciona un distrito para comenzar."),
-      selectInput("distrito", "Distritos:", 
-                  choices = c("Selecciona uno" = "", distritos_trans$nombre)),
-      hr(),
-      helpText("¿Qué buscas?"),
-      selectInput("tipo_lugar", "Tipo de lugar:",
-                  choices = c("Ninguno" = "", "Fuentes de agua", "Iglesias", "Palacios y museos",
-                              "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
-      checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE)
-    ),
-    mainPanel(
-      leafletOutput("mapa", height = "600px"),
-      plotlyOutput("hoteles")
+ui <- navbarPage(
+  title = "Valencia y EMT",
+  id = "menu_app",
+  theme = shinythemes::shinytheme("flatly"),
+  
+  # Pestaña con el mapa
+  tabPanel("Mapa Interactivo",
+    icon = icon("map-location-dot"),
+    sidebarLayout(
+      sidebarPanel(
+        helpText("Elige la cartografía del mapa."),
+        selectInput("tipo_mapa", "Estilo del mapa:",
+            choices = c("Color (Voyager)" = "CartoDB.Voyager",
+                        "Satélite" = "Esri.WorldImagery",
+                        "Gris claro" = "CartoDB.Positron",
+                        "Oscuro" = "CartoDB.DarkMatter")),
+        helpText("Selecciona un distrito para comenzar."),
+        selectInput("distrito", "Distritos:", 
+                    choices = c("Selecciona uno" = "", distritos_trans$nombre)),
+        hr(),
+        helpText("¿Qué buscas?"),
+        selectInput("tipo_lugar", "Tipo de lugar:",
+                    choices = c("Ninguno" = "", "Fuentes de agua", "Iglesias", "Palacios y museos",
+                                "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
+        checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE)
+      ),
+      mainPanel(
+        leafletOutput("mapa", height = "700px")
+      )
+    )
+  ),
+  # Pestaña con el resto de gráficos
+  tabPanel("Estadísticas de Hoteles",
+    icon = icon("chart-bar"),
+    fluidPage(
+      column(12,
+             h2("Análisis de Hoteles por Distrito"),
+             p("Este gráfico muestra la capacidad hotelera de cada distrito."),
+             plotlyOutput("hoteles", height = "600px")
+      )
     )
   )
 )
@@ -163,16 +185,34 @@ server <- function(input, output, session) {
   
   # A. MAPA BASE (Solo una vez)
   output$mapa <- renderLeaflet({
-    leaflet(options = leafletOptions(minZoom = 11, maxZoom = 18)) %>%
-      addProviderTiles(providers$CartoDB.Voyager) %>%
+    # Coordenadas de Valencia
+    valencia_bounds <- list(lng1 = -0.55, lat1 = 39.35, 
+                            lng2 = -0.25, lat2 = 39.60)
+    
+    leaflet(options = leafletOptions(
+      # Restringe el zoom máximo y mínimo
+      minZoom = 11,
+      maxZoom = 18,
+      maxBounds = valencia_bounds # Restringe el área de desplazamiento
+    )) %>%
+      # Cartografía basada en el input
+      addProviderTiles(input$tipo_mapa) %>% 
+      
+      # Centramos la vista inicial
       setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
+      
+      # Aseguramos que el mapa no se salga de los límites ni al arrastrar
+      setMaxBounds(lng1 = valencia_bounds$lng1, lat1 = valencia_bounds$lat1,
+                   lng2 = valencia_bounds$lng2, lat2 = valencia_bounds$lat2) %>%
+      
+      # Añadimos la capa de distritos
       addPolygons(
         data = distritos_trans,
-        color = "gray", weight = 1, opacity = 0.2,
-        fillColor = "lightblue", fillOpacity = 0.1,
+        color = "gray", weight = 1, opacity = 0.6,
+        fillColor = "lightblue", fillOpacity = 0.3,
         group = "base_distritos"
       )
-  })
+})
 
 
   # Preparamos los datos
