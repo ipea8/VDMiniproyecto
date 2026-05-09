@@ -85,7 +85,7 @@ fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
 fuentes_trans <- st_cast(fuentes_trans, "POINT")
 paradas_trans <- st_transform(archivos$EMTxdistritos.shp, crs = 4326)
 paradas_trans <- st_cast(paradas_trans, "POINT")
-iglesias_trans <- st_transform(archivos$Iglesias_ID_parada_agrupadas.shp, crs = 4326)
+iglesias_trans <- st_transform(archivos$Iglesias_ID_Parada_agrupadas.shp, crs = 4326)
 iglesias_trans <- st_cast(iglesias_trans, "POINT")
 palacios_trans <- st_transform(archivos$palaciosymuseos_ID_Paradas_agrupadas.shp, crs = 4326)
 palacios_trans <- st_cast(palacios_trans, "POINT")
@@ -93,8 +93,9 @@ parroquias_trans <- st_transform(archivos$parroquiasyconventos_ID_Parada_agrupad
 parroquias_trans <- st_cast(parroquias_trans, "POINT")
 parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
 parques_trans <- st_cast(parques_trans, "POINT")
-otros_trans <- st_transform(archivos$Monumentos_ID_parada_agrupados.shp, crs = 4326)
+otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
 otros_trans <- st_cast(otros_trans, "POINT")
+
 ```
 
 
