@@ -94,21 +94,19 @@ parroquias_trans <- st_cast(parroquias_trans, "POINT")
 parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
 parques_trans <- st_cast(parques_trans, "POINT")
 
-<<<<<<< HEAD
+
 otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
 
-=======
->>>>>>> 56f1a727b0df766f71e456626b2e3b9b7720fd0a
+
 parques_trans <- parques_trans %>%
   rename(
     distrito = nombre,
     nombre = jardin
   )
-<<<<<<< HEAD
+
 otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
-=======
-otros_trans <- st_transform(archivos$Monumentos_ID_parada_agrupados.shp, crs = 4326)
->>>>>>> 56f1a727b0df766f71e456626b2e3b9b7720fd0a
+
+otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
 otros_trans <- st_cast(otros_trans, "POINT")
 
 ```
@@ -211,6 +209,79 @@ server <- function(input, output, session) {
         )
       )
   })
+   # Gráfica de monumentos por distrito
+  output$monumentos_grafica <- renderPlotly({
+    req(input$tipos_monumento)
+
+    datasets <- list(
+      "Iglesias"                 = iglesias_trans,
+      "Palacios y museos"        = palacios_trans,
+      "Parroquias y conventos"   = parroquias_trans,
+      "Zonas de juego y parques" = parques_trans,
+      "Otros monumentos"         = otros_trans,
+      "Recursos"                 = recursos_trans
+    )
+
+    distritos_ref <- distritos_trans %>%
+      as.data.frame() %>%
+      select(coddistrit, nombre)
+
+    df_combined <- purrr::map_dfr(input$tipos_monumento, function(tipo) {
+      datasets[[tipo]] %>%
+        as.data.frame() %>%
+        count(coddistrit) %>%
+        left_join(distritos_ref, by = "coddistrit") %>%
+        mutate(tipo = tipo)
+    }) %>%
+      tidyr::complete(
+        nombre = distritos_ref$nombre,
+        tipo   = input$tipos_monumento,
+        fill   = list(n = 0)
+      )
+
+    gg <- ggplot(df_combined, aes(x = nombre, y = n, fill = tipo)) +
+      geom_bar(stat = "identity", position = "stack") +
+      labs(
+        title = "Monumentos por Distrito en Valencia",
+        x     = "Distrito",
+        y     = "Número de monumentos",
+        fill  = "Tipo"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+    ggplotly(gg) %>%
+      config(displayModeBar = FALSE)
+  })
+  
+  # Gráfica de paradas por distrito
+  output$paradas_grafica <- renderPlotly({
+
+    distritos_ref <- distritos_trans %>%
+      as.data.frame() %>%
+      select(coddistrit, nombre) %>%
+      distinct()
+
+    df_paradas <- paradas_trans %>%
+      as.data.frame() %>%
+      count(coddistrit) %>%
+      left_join(distritos_ref, by = "coddistrit")
+
+    gg <- ggplot(df_paradas, aes(x = n, y = reorder(nombre, n), fill = n)) +
+      geom_bar(stat = "identity") +
+      scale_fill_gradient(low = "#AED6F1", high = "#1A5276") +
+      labs(
+        title = "Paradas EMT por Distrito en Valencia",
+        x     = "Número de paradas",
+        y     = "Distrito",
+        fill  = "Paradas"
+      ) +
+      theme_minimal()
+
+    ggplotly(gg) %>%
+      config(displayModeBar = FALSE)
+  })
+  
   
   # Mapa base
   output$mapa <- renderLeaflet({
