@@ -93,16 +93,13 @@ parroquias_trans <- st_transform(archivos$parroquiasyconventos_ID_Parada_agrupad
 parroquias_trans <- st_cast(parroquias_trans, "POINT")
 parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
 parques_trans <- st_cast(parques_trans, "POINT")
-<<<<<<< HEAD
-otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
-=======
+
 parques_trans <- parques_trans %>%
   rename(
     distrito = nombre,
     nombre = jardin
   )
 otros_trans <- st_transform(archivos$Monumentos_ID_parada_agrupados.shp, crs = 4326)
->>>>>>> 72ff76d61eb46627472a20ec8fb3efddb927d09b
 otros_trans <- st_cast(otros_trans, "POINT")
 
 ```
