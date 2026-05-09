@@ -19,6 +19,7 @@ library(shiny)
 library(shinythemes)
 library(plotly)
 library(sf)
+library(DT)
 ```
 
 
@@ -109,6 +110,56 @@ otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4
 otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
 otros_trans <- st_cast(otros_trans, "POINT")
 
+#Transformación de capas aisladas 
+iglesias_aisladas_trans <- st_transform(archivos$iglesias_aisladas_actualizadas.shp, crs = 4326) %>% st_cast("POINT")
+palacios_aislados_trans <- st_transform(archivos$palaciosymuseos_aislados_actualizados.shp, crs = 4326) %>% st_cast("POINT")
+parques_aislados_trans <- st_transform(archivos$zonas_juegos_infantiles_aisladas_actualizadas.shp, crs = 4326) %>%st_cast("POINT")
+otros_aislados_trans <- st_transform(archivos$monumentos_aislados_actualizados.shp, crs = 4326) %>% st_cast("POINT")
+
+
+## PARA LOS LUGARES AISLADOS 
+
+# 1. Cargar la capa de paradas (que tiene el nombre/denominacion)
+nombres_paradas <- paradas_trans %>% 
+  as.data.frame() %>% 
+  select(id_parada, nombre_parada_cercana = denominaci)
+
+preparar_aislados<- function(capa) {
+  
+  # 1. Hacemos la unión con los nombres de las paradas primero
+  temp_df <- capa %>%
+    left_join(nombres_paradas, by = "id_parada") %>% 
+    as.data.frame()
+  
+  # 2. Aplicamos la lógica de columnas según el tipo de capa
+  if ("jardin" %in% names(temp_df)) {
+    # CASO PARQUES
+    resultado <- temp_df %>%
+      select(
+        `Lugar Aislado` = jardin, 
+        Distrito = nombre, 
+        `Parada más Cercana` = nombre_parada_cercana
+      )
+  } else {
+    # CASO RESTO DE CAPAS (Iglesias, Palacios, Otros)
+    resultado <- temp_df %>%
+      select(
+        `Lugar Aislado` = nombre, 
+        Distrito = nombre_2, 
+        `Parada más Cercana` = nombre_parada_cercana
+      )
+  }
+  
+  return(resultado)
+}
+
+
+tabla_iglesias_aisladas<- preparar_aislados(iglesias_aisladas_trans)
+tabla_palacios_aislados<- preparar_aislados(palacios_aislados_trans)
+tabla_parques_aislados<- preparar_aislados(parques_aislados_trans)
+tabla_otros_aislados<- preparar_aislados(otros_aislados_trans)
+
+
 ```
 
 
@@ -156,6 +207,56 @@ ui <- navbarPage(
                h2("Análisis de Hoteles por Distrito"),
                p("Este gráfico muestra la capacidad hotelera de cada distrito."),
                plotlyOutput("hoteles", height = "600px")
+        )
+      )
+    ),
+    tabPanel("Monumentos por Distrito",
+      icon = icon("monument"),
+      fluidPage(
+        column(12,
+          h2("Monumentos por Distrito"),
+          p("Selecciona los tipos de monumentos que deseas visualizar."),
+          checkboxGroupInput(
+            inputId  = "tipos_monumento",
+            label    = "Tipos de monumentos:",
+            choices  = c("Iglesias", "Palacios y museos",
+                         "Parroquias y conventos", "Zonas de juego y parques",
+                         "Otros monumentos"),
+            selected = "Iglesias",
+            inline   = TRUE
+          ),
+          plotlyOutput("monumentos_grafica", height = "500px")
+        )
+      )
+    ),
+    tabPanel("Paradas por Distrito",
+      icon = icon("bus"),
+      fluidPage(
+        column(12,
+          h2("Paradas EMT por Distrito"),
+          p("Número de paradas de la EMT en cada distrito de Valencia."),
+          plotlyOutput("paradas_grafica", height = "500px")
+        )
+      )
+    ),
+    tabPanel("Lugares aislados",
+      icon = icon("circle-exclamation"),
+      fluidPage(
+        column(12,
+          h2("Lugares Aislados"), # Título de la sección
+          p("Consulta los puntos de interés que se encuentran a más de 150 metros de la parada de la EMT más cercana."),
+          
+          
+          wellPanel(
+            selectInput("tipo_aislado", "Ver puntos negros de:",
+                        choices = c("Iglesias", "Palacios y museos", 
+                                    "Zonas de juego y parques", "Otros"))
+          ),
+          hr(),
+          
+          h3(textOutput("titulo_aislados")),
+          
+          DT::DTOutput("tabla_aislados")
         )
       )
     )
@@ -218,8 +319,7 @@ server <- function(input, output, session) {
       "Palacios y museos"        = palacios_trans,
       "Parroquias y conventos"   = parroquias_trans,
       "Zonas de juego y parques" = parques_trans,
-      "Otros monumentos"         = otros_trans,
-      "Recursos"                 = recursos_trans
+      "Otros monumentos"         = otros_trans
     )
 
     distritos_ref <- distritos_trans %>%
@@ -641,6 +741,35 @@ server <- function(input, output, session) {
     },
     ignoreInit = TRUE
   )
+  output$titulo_aislados <- renderText({
+    req(input$tipo_aislado)
+    paste("Listado de", input$tipo_aislado, "sin conexión cercana")
+  })
+
+  # 2. Renderizado de la tabla DT para los lugares aislados
+  output$tabla_aislados <- DT::renderDT({
+    datos_tabla <- switch(input$tipo_aislado,
+      "Iglesias" = tabla_iglesias_aisladas,
+      "Palacios y museos" = tabla_palacios_aislados,
+      "Zonas de juego y parques" = tabla_parques_aislados,
+      "Otros" = tabla_otros_aislados
+    )
+    
+    req(datos_tabla)
+
+    DT::datatable(
+      datos_tabla,
+      rownames = FALSE,
+      options = list(
+        pageLength = 10,
+        autoWidth = TRUE,
+        language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json'),
+        dom = 'ftp' 
+      ),
+      class = 'cell-border stripe hover'
+    )
+  })
+  
   
   # Definimos el estilo del icono para las fuentes
   icono_fuente <- makeAwesomeIcon(
@@ -650,6 +779,8 @@ server <- function(input, output, session) {
     library = "fa"
   )
   
+  
+
   # Capa de fuentes de agua
   observeEvent(list(input$distrito, input$fuentes_agua), {
     proxy <- leafletProxy("mapa") %>% 
@@ -683,6 +814,7 @@ server <- function(input, output, session) {
       proxy %>% clearGroup("zonas_verdes")
     }
   })
+  
 }
 
 shinyApp(ui, server)
