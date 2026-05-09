@@ -93,16 +93,15 @@ parroquias_trans <- st_transform(archivos$parroquiasyconventos_ID_Parada_agrupad
 parroquias_trans <- st_cast(parroquias_trans, "POINT")
 parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
 parques_trans <- st_cast(parques_trans, "POINT")
-<<<<<<< HEAD
+
 otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
-=======
+
 parques_trans <- parques_trans %>%
   rename(
     distrito = nombre,
     nombre = jardin
   )
-otros_trans <- st_transform(archivos$Monumentos_ID_parada_agrupados.shp, crs = 4326)
->>>>>>> 72ff76d61eb46627472a20ec8fb3efddb927d09b
+otros_trans <- st_transform(archivos$Monumentos_ID_Parada_agrupados.shp, crs = 4326)
 otros_trans <- st_cast(otros_trans, "POINT")
 
 ```
@@ -276,7 +275,7 @@ server <- function(input, output, session) {
   })
 
   # Observar selección de lugares de interés
-  observeEvent(list(input$distrito, input$tipo_lugar), {
+  observeEvent(list(input$distrito, input$tipo_lugar),{
     proxy <- leafletProxy("mapa") %>% 
       clearGroup("seleccion") %>% 
       clearGroup("paradas")
@@ -285,6 +284,7 @@ server <- function(input, output, session) {
     req(input$distrito, input$tipo_lugar)
     
     if (input$tipo_lugar == "Iglesias") {
+      if (nrow(datos_distrito()$iglesias)>0){
       proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$iglesias,
@@ -292,7 +292,10 @@ server <- function(input, output, session) {
           label = ~nombre,
           opacity = 1,
           group = "seleccion"
-        ) %>%
+        )
+      }
+        
+    proxy %>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -311,6 +314,7 @@ server <- function(input, output, session) {
     
     
     else if (input$tipo_lugar == "Palacios y museos") {
+      if (nrow(datos_distrito()$palacios)>0){
     proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$palacios,
@@ -318,7 +322,9 @@ server <- function(input, output, session) {
           label = ~nombre,
           opacity = 1,
           group = "seleccion"
-        ) %>%
+        ) 
+      }
+      proxy%>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -331,18 +337,22 @@ server <- function(input, output, session) {
           ),
           radius = 2, color = "red",
           group = "paradas",
-          opacity = 1) 
+          opacity = 1)
     }
     
     else if (input$tipo_lugar == "Parroquias y conventos") {
-    proxy %>% 
+      if (nrow(datos_distrito()$parroquias)>0){
+        proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$parroquias,
           radius = 0.5, color = "purple",
           label = ~nombre,
           opacity = 1,
           group = "seleccion"
-        ) %>%
+        ) 
+      }
+      
+      proxy%>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -358,7 +368,8 @@ server <- function(input, output, session) {
           opacity = 1) 
     }
     
-    else if (input$tipo_lugar == "Zonas de juego y parques") {
+    else if (input$tipo_lugar == "Zonas de juego y parques") { 
+      if (nrow(datos_distrito()$parques)>0){
     proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$parques,
@@ -366,7 +377,9 @@ server <- function(input, output, session) {
           label = ~nombre,
           opacity = 1,
           group = "seleccion"
-        ) %>%
+        ) 
+      }
+      proxy%>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -383,14 +396,17 @@ server <- function(input, output, session) {
     }
     
     else if (input$tipo_lugar == "Otros") {
-    proxy %>% 
+      if (nrow(datos_distrito()$otros)>0){
+        proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$otros,
           radius = 0.5, color = "pink",
           label = ~nombre,
           opacity = 1,
           group = "seleccion"
-        ) %>%
+        )
+      }
+      proxy%>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -592,5 +608,6 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
 ```
 
