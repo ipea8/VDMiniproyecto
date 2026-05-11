@@ -20,6 +20,7 @@ library(shinythemes)
 library(plotly)
 library(sf)
 library(DT)
+library(htmltools)
 ```
 
 
@@ -169,6 +170,29 @@ ui <- navbarPage(
   id = "menu_app",
   theme = shinythemes::shinytheme("flatly"),
   
+    # Inyección de CSS para la leyenda y el cursor
+  header = tags$head(
+    tags$style(HTML("
+      .leaflet-interactive { cursor: pointer !important; }
+      .info.legend { 
+        background: white; 
+        padding: 10px; 
+        border-radius: 5px; 
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        line-height: 18px;
+        color: #555;
+      }
+      .legend i {
+        width: 12px;
+        height: 12px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.8;
+        border-radius: 50%;
+      }
+    "))
+  ),
+  
   # Pestaña con el mapa
   tabPanel("Mapa Interactivo",
     icon = icon("map-location-dot"),
@@ -241,7 +265,7 @@ ui <- navbarPage(
       fluidPage(
         column(12,
           h2("Lugares Aislados"), # Título de la sección
-          p("Consulta los puntos de interés que se encuentran a más de 150 metros de la parada de la EMT más cercana."),
+          p("Consulta los puntos de interés que se encuentran a más de 300 metros de la parada de la EMT más cercana."),
           
           
           wellPanel(
@@ -410,7 +434,16 @@ server <- function(input, output, session) {
         color = "gray", weight = 1, opacity = 0.6,
         fillColor = "lightblue", fillOpacity = 0.3,
         group = "base_distritos"
-      )
+      ) %>%
+      # AÑADIR LEYENDA
+    addLegend(
+      position = "topright",
+      colors = c("red", "magenta", "black", "purple", "orange", "pink", "blue"),
+      labels = c("Parada EMT (Clicable)", "Iglesias", "Palacios/Museos", 
+                 "Parroquias", "Parques", "Otros", "Fuentes"),
+      title = "Referencias",
+      opacity = 0.8
+    )
 })
 
 
@@ -817,4 +850,7 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 
 ```
+
+
+
 
