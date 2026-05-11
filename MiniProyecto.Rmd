@@ -170,25 +170,48 @@ ui <- navbarPage(
   id = "menu_app",
   theme = shinythemes::shinytheme("flatly"),
   
-    # Inyección de CSS para la leyenda y el cursor
+  # Inyección de CSS para tipografía moderna, leyenda, cursor y paneles
   header = tags$head(
     tags$style(HTML("
-      .leaflet-interactive { cursor: pointer !important; }
-      .info.legend { 
-        background: white; 
-        padding: 10px; 
-        border-radius: 5px; 
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
-        line-height: 18px;
-        color: #555;
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+      
+      body, .navbar, .well {
+        font-family: 'Inter', sans-serif;
       }
+      
+      body {
+        background-color: #F8FAFC;
+      }
+      
+      .well {
+        background-color: #ffffff !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      }
+      
+      .leaflet-interactive { cursor: pointer !important; }
+      
+      .info.legend { 
+        background: rgba(255, 255, 255, 0.95); 
+        padding: 12px 16px; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        line-height: 20px;
+        color: #334155;
+        font-size: 13px;
+        border: 1px solid #E2E8F0;
+      }
+      
       .legend i {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
         float: left;
-        margin-right: 8px;
-        opacity: 0.8;
+        margin-right: 10px;
+        opacity: 0.85;
         border-radius: 50%;
+        border: 1px solid #ffffff;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
       }
     "))
   ),
@@ -198,11 +221,25 @@ ui <- navbarPage(
     icon = icon("map-location-dot"),
     sidebarLayout(
       sidebarPanel(
+        
+        # --- NUEVO: TEXTOS DE FUNCIONAMIENTO ---
+        tags$div(
+          style = "background-color: #F0FDF4; border-left: 4px solid #22C55E; padding: 12px; border-radius: 4px; margin-bottom: 15px;",
+          tags$h4("Guía de uso", style = "margin-top: 0; color: #166534; font-size: 14px; font-weight: 600;"),
+          tags$p("1. Selecciona un distrito.", style = "margin-bottom: 4px; font-size: 13px; color: #15803D;"),
+          tags$p("2. Selecciona el tipo de monumento que quieres ver.", style = "margin-bottom: 0; font-size: 13px; color: #15803D;")
+        ),
+        tags$div(
+          style = "background-color: #FFFBEB; border-left: 4px solid #F59E0B; padding: 12px; border-radius: 4px; margin-bottom: 25px;",
+          tags$p(tags$strong("💡 ¡Pruébalo!"), " Una vez seleccionado el distrito y el monumento, clica en una parada de autobús.", style = "margin-bottom: 0; font-size: 13px; color: #B45309;")
+        ),
+        # ----------------------------------------
+        
         helpText("Elige la cartografía del mapa."),
         selectInput("tipo_mapa", "Estilo del mapa:",
-            choices = c("Color (Voyager)" = "CartoDB.Voyager",
+            choices = c("Gris claro (Profesional)" = "CartoDB.Positron",
+                        "Color (Voyager)" = "CartoDB.Voyager",
                         "Satélite" = "Esri.WorldImagery",
-                        "Gris claro" = "CartoDB.Positron",
                         "Oscuro" = "CartoDB.DarkMatter")),
         helpText("Selecciona un distrito para comenzar."),
         selectInput("distrito", "Distritos:", 
@@ -219,14 +256,15 @@ ui <- navbarPage(
       )
     )
   ),
+  
   # Pestaña con el resto de gráficos
   navbarMenu("Gráficas",
     tabPanel("Estadísticas de Hoteles",
       icon = icon("chart-bar"),
       fluidPage(
         column(12,
-               h2("Análisis de Hoteles por Distrito"),
-               p("Este gráfico muestra la capacidad hotelera de cada distrito."),
+               h2("Análisis de Hoteles por Distrito", style = "color: #1E293B; font-weight: 600;"),
+               p("Este gráfico muestra la capacidad hotelera de cada distrito.", style = "color: #64748B;"),
                plotlyOutput("hoteles", height = "600px")
         )
       )
@@ -235,8 +273,8 @@ ui <- navbarPage(
       icon = icon("monument"),
       fluidPage(
         column(12,
-          h2("Monumentos por Distrito"),
-          p("Selecciona los tipos de monumentos que deseas visualizar."),
+          h2("Monumentos por Distrito", style = "color: #1E293B; font-weight: 600;"),
+          p("Selecciona los tipos de monumentos que deseas visualizar.", style = "color: #64748B;"),
           checkboxGroupInput(
             inputId  = "tipos_monumento",
             label    = "Tipos de monumentos:",
@@ -254,8 +292,8 @@ ui <- navbarPage(
       icon = icon("bus"),
       fluidPage(
         column(12,
-          h2("Paradas EMT por Distrito"),
-          p("Número de paradas de la EMT en cada distrito de Valencia."),
+          h2("Paradas EMT por Distrito", style = "color: #1E293B; font-weight: 600;"),
+          p("Número de paradas de la EMT en cada distrito de Valencia.", style = "color: #64748B;"),
           plotlyOutput("paradas_grafica", height = "500px")
         )
       )
@@ -264,18 +302,17 @@ ui <- navbarPage(
       icon = icon("circle-exclamation"),
       fluidPage(
         column(12,
-          h2("Lugares Aislados"), # Título de la sección
-          p("Consulta los puntos de interés que se encuentran a más de 300 metros de la parada de la EMT más cercana."),
-          
+          h2("Lugares Aislados", style = "color: #1E293B; font-weight: 600;"),
+          p("Consulta los puntos de interés que se encuentran a más de 300 metros de la parada de la EMT más cercana.", style = "color: #64748B;"),
           
           wellPanel(
             selectInput("tipo_aislado", "Ver puntos negros de:",
                         choices = c("Iglesias", "Palacios y museos", 
                                     "Zonas de juego y parques", "Otros"))
           ),
-          hr(),
+          hr(style = "border-top: 1px solid #E2E8F0;"),
           
-          h3(textOutput("titulo_aislados")),
+          h3(textOutput("titulo_aislados"), style = "color: #334155; font-weight: 400;"),
           
           DT::DTOutput("tabla_aislados")
         )
@@ -289,20 +326,19 @@ server <- function(input, output, session) {
   
   # Gráfica de hoteles
   output$hoteles <- renderPlotly({
-    # Transformamos el dataset a un dataframe
     df_limpio <- data_hoteles %>%
       as.data.frame() %>% 
       select(-geometry)
-    # Convierte el dataset a formato largo
+    
     df_long <- df_limpio %>%
       pivot_longer(
         cols = ends_with("estrella") | ends_with("estrellas"), 
         names_to = "categoria_estrellas", 
         values_to = "conteo"
       )
-    # Creación de la gráfica con ggplot
+    
     gg <- ggplot(df_long, aes(x = categoria_estrellas, y = conteo, fill = categoria_estrellas)) +
-      geom_bar(stat = "identity") +
+      geom_bar(stat = "identity", width = 0.8) +
       facet_wrap(~DISTRITO) +
       labs(
         title = "Hoteles por Distrito en Valencia",
@@ -310,28 +346,20 @@ server <- function(input, output, session) {
         y = "Número de Hoteles", 
         fill = "Estrellas"
       ) +
-      theme_minimal() +
+      theme_minimal(base_family = "sans") +
       theme(
         axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()
+        axis.ticks.x = element_blank(),
+        strip.text = element_text(face = "bold", color = "#334155"),
+        panel.grid.major.x = element_blank()
       ) +
-      scale_fill_brewer(palette = "YlOrRd")
-    # Transformación a plotly para hacerla interactiva
+      scale_fill_brewer(palette = "Blues") # Paleta profesional monocromática
+      
     ggplotly(gg) %>%
-      config(
-        modeBarButtonsToRemove = c(
-          "zoom2d",
-          "pan2d",
-          "select2d",
-          "lasso2d",
-          "zoomIn2d",
-          "zoomOut2d",
-          "hoverClosestCartesian",
-          "hoverCompareCartesian"
-        )
-      )
+      config(displayModeBar = FALSE)
   })
-   # Gráfica de monumentos por distrito
+  
+  # Gráfica de monumentos por distrito
   output$monumentos_grafica <- renderPlotly({
     req(input$tipos_monumento)
 
@@ -360,16 +388,25 @@ server <- function(input, output, session) {
         fill   = list(n = 0)
       )
 
+    # Paleta de colores profesional para monumentos
+    colores_monumentos <- c("Iglesias" = "#4F46E5", "Palacios y museos" = "#0F766E",
+                            "Parroquias y conventos" = "#7C3AED", "Zonas de juego y parques" = "#059669",
+                            "Otros monumentos" = "#D97706")
+
     gg <- ggplot(df_combined, aes(x = nombre, y = n, fill = tipo)) +
-      geom_bar(stat = "identity", position = "stack") +
+      geom_bar(stat = "identity", position = "stack", width = 0.75) +
+      scale_fill_manual(values = colores_monumentos) +
       labs(
         title = "Monumentos por Distrito en Valencia",
         x     = "Distrito",
         y     = "Número de monumentos",
         fill  = "Tipo"
       ) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme_minimal(base_family = "sans") +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1, color = "#475569"),
+        panel.grid.major.x = element_blank()
+      )
 
     ggplotly(gg) %>%
       config(displayModeBar = FALSE)
@@ -389,15 +426,19 @@ server <- function(input, output, session) {
       left_join(distritos_ref, by = "coddistrit")
 
     gg <- ggplot(df_paradas, aes(x = n, y = reorder(nombre, n), fill = n)) +
-      geom_bar(stat = "identity") +
-      scale_fill_gradient(low = "#AED6F1", high = "#1A5276") +
+      geom_bar(stat = "identity", width = 0.7) +
+      scale_fill_gradient(low = "#93C5FD", high = "#1E3A8A") + # Degradado azul profesional
       labs(
         title = "Paradas EMT por Distrito en Valencia",
         x     = "Número de paradas",
         y     = "Distrito",
         fill  = "Paradas"
       ) +
-      theme_minimal()
+      theme_minimal(base_family = "sans") +
+      theme(
+        axis.text.y = element_text(color = "#334155"),
+        panel.grid.major.y = element_blank()
+      )
 
     ggplotly(gg) %>%
       config(displayModeBar = FALSE)
@@ -406,55 +447,46 @@ server <- function(input, output, session) {
   
   # Mapa base
   output$mapa <- renderLeaflet({
-    # Coordenadas de Valencia
     valencia_bounds <- list(
       lng1 = -0.70, lat1 = 39.20,
       lng2 = -0.15, lat2 = 39.75
     )
     
     leaflet(options = leafletOptions(
-      # Restringe el zoom máximo y mínimo
       minZoom = 11,
       maxZoom = 18,
-      maxBounds = valencia_bounds # Restringe el área de desplazamiento
+      maxBounds = valencia_bounds 
     )) %>%
-      # Cartografía basada en el input
       addProviderTiles(input$tipo_mapa) %>% 
-      
-      # Centramos la vista inicial
       setView(lng = -0.376, lat = 39.470, zoom = 12) %>%
-      
-      # Aseguramos que el mapa no se salga de los límites ni al arrastrar
       setMaxBounds(lng1 = valencia_bounds$lng1, lat1 = valencia_bounds$lat1,
                    lng2 = valencia_bounds$lng2, lat2 = valencia_bounds$lat2) %>%
       
-      # Añadimos la capa de distritos
+      # Añadimos la capa de distritos con estilo sutil
       addPolygons(
         data = distritos_trans,
-        color = "gray", weight = 1, opacity = 0.6,
-        fillColor = "lightblue", fillOpacity = 0.3,
+        color = "#94A3B8", weight = 1.5, opacity = 0.8,
+        fillColor = "#F1F5F9", fillOpacity = 0.35,
         group = "base_distritos"
       ) %>%
-      # AÑADIR LEYENDA
-    addLegend(
-      position = "topright",
-      colors = c("red", "magenta", "black", "purple", "orange", "pink", "blue"),
-      labels = c("Parada EMT (Clicable)", "Iglesias", "Palacios/Museos", 
-                 "Parroquias", "Parques", "Otros", "Fuentes"),
-      title = "Referencias",
-      opacity = 0.8
-    )
+      # Leyenda con paleta profesional alineada a los nuevos hexagesimales
+      addLegend(
+        position = "topright",
+        colors = c("#E11D48", "#4F46E5", "#0F766E", "#7C3AED", "#059669", "#D97706", "#5F9EA0"),
+        labels = c("Parada EMT", "Iglesias", "Palacios/Museos", 
+                   "Parroquias", "Parques", "Otros", "Fuentes"),
+        title = "<strong>Puntos de Interés</strong>",
+        opacity = 0.85
+      )
 })
-
 
   # Preparamos los datos
   datos_distrito <- reactive({
-    req(input$distrito) # Si no hay distrito, no hace nada
+    req(input$distrito) 
     
     dist_sel <- distritos_trans %>% filter(nombre == input$distrito)
     cod <- dist_sel$coddistrit
     
-    # Devolvemos una lista con todo lo filtrado para ese distrito
     list(
       poligono = dist_sel,
       fuentes  = fuentes_trans %>% filter(coddistrit == cod),
@@ -467,7 +499,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # Observar selección de distrito
+  # Observar selección de distrito (Bordes más marcados, relleno sutil)
   observeEvent(input$distrito, {
     req(input$distrito)
     
@@ -475,11 +507,10 @@ server <- function(input, output, session) {
       clearGroup("resaltado") %>%
       addPolygons(
         data = datos_distrito()$poligono,
-        color = "black", weight = 3, opacity = 1,
-        fillColor = "lightblue",
-        fillOpacity = 0.45,
+        color = "#2563EB", weight = 2.5, opacity = 1,
+        fillColor = "#DBEAFE", fillOpacity = 0.4,
         group = "resaltado"
-      )
+      ) 
   })
 
   # Observar selección de lugares de interés
@@ -488,17 +519,18 @@ server <- function(input, output, session) {
       clearGroup("seleccion") %>% 
       clearGroup("paradas")
     
-    # Solo dibujamos si hay un distrito y un lugar seleccionado
     req(input$distrito, input$tipo_lugar)
+    
+    # Se añaden bordes blancos (`color = "#ffffff"`) para estética de "pin" moderno
     
     if (input$tipo_lugar == "Iglesias") {
       if (nrow(datos_distrito()$iglesias)>0){
       proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$iglesias,
-          radius = 0.5, color = "magenta",
+          radius = 5, color = "#ffffff", weight = 1, fillColor = "#4F46E5",
           label = ~nombre,
-          opacity = 1,
+          fillOpacity = 0.85,
           group = "seleccion"
         )
       }
@@ -514,21 +546,20 @@ server <- function(input, output, session) {
             ), 
             htmltools::HTML
           ),
-          radius = 2, color = "red",
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#E11D48",
           group = "paradas",
-          opacity = 1
+          fillOpacity = 0.85
         )
     }
-    
     
     else if (input$tipo_lugar == "Palacios y museos") {
       if (nrow(datos_distrito()$palacios)>0){
     proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$palacios,
-          radius = 0.5, color = "black",
+          radius = 5, color = "#ffffff", weight = 1, fillColor = "#0F766E",
           label = ~nombre,
-          opacity = 1,
+          fillOpacity = 0.85,
           group = "seleccion"
         ) 
       }
@@ -543,9 +574,9 @@ server <- function(input, output, session) {
             ), 
             htmltools::HTML
           ),
-          radius = 2, color = "red",
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#E11D48",
           group = "paradas",
-          opacity = 1)
+          fillOpacity = 0.85)
     }
     
     else if (input$tipo_lugar == "Parroquias y conventos") {
@@ -553,9 +584,9 @@ server <- function(input, output, session) {
         proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$parroquias,
-          radius = 0.5, color = "purple",
+          radius = 5, color = "#ffffff", weight = 1, fillColor = "#7C3AED",
           label = ~nombre,
-          opacity = 1,
+          fillOpacity = 0.85,
           group = "seleccion"
         ) 
       }
@@ -571,9 +602,9 @@ server <- function(input, output, session) {
             ), 
             htmltools::HTML
           ),
-          radius = 2, color = "red",
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#E11D48",
           group = "paradas",
-          opacity = 1) 
+          fillOpacity = 0.85) 
     }
     
     else if (input$tipo_lugar == "Zonas de juego y parques") { 
@@ -581,9 +612,9 @@ server <- function(input, output, session) {
     proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$parques,
-          radius = 0.5, color = "orange",
+          radius = 5, color = "#ffffff", weight = 1, fillColor = "#059669",
           label = ~nombre,
-          opacity = 1,
+          fillOpacity = 0.85,
           group = "seleccion"
         ) 
       }
@@ -591,7 +622,7 @@ server <- function(input, output, session) {
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
-          radius = 2, color = "red",
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#E11D48",
           label = lapply(
             paste0(
               "<b>Parada EMT:</b> ", datos_distrito()$paradas$denominaci, "<br/>",
@@ -600,7 +631,7 @@ server <- function(input, output, session) {
             htmltools::HTML
           ),
           group = "paradas",
-          opacity = 1) 
+          fillOpacity = 0.85) 
     }
     
     else if (input$tipo_lugar == "Otros") {
@@ -608,9 +639,9 @@ server <- function(input, output, session) {
         proxy %>% 
         addCircleMarkers(
           data = datos_distrito()$otros,
-          radius = 0.5, color = "pink",
+          radius = 5, color = "#ffffff", weight = 1, fillColor = "#D97706",
           label = ~nombre,
-          opacity = 1,
+          fillOpacity = 0.85,
           group = "seleccion"
         )
       }
@@ -618,7 +649,7 @@ server <- function(input, output, session) {
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
-          radius = 2, color = "red",
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#E11D48",
           label = lapply(
             paste0(
               "<b>Parada EMT:</b> ", datos_distrito()$paradas$denominaci, "<br/>",
@@ -627,7 +658,7 @@ server <- function(input, output, session) {
             htmltools::HTML
           ),
           group = "paradas",
-          opacity = 1) 
+          fillOpacity = 0.85) 
     }
     
   })
@@ -641,27 +672,25 @@ server <- function(input, output, session) {
     
     parada_seleccionada(click$id)
     
-    # Resaltar la parada clicada
+    # Resaltar la parada clicada con estilo "halo" amarillo
     leafletProxy("mapa") %>%
       clearGroup("origen_resaltado") %>%
       addCircleMarkers(
         lng = click$lng, lat = click$lat,
-        radius = 5, color = "yellow", weight = 3,
-        fillOpacity = 0,
+        radius = 8, color = "#FBBF24", weight = 3,
+        fillColor = "transparent",
         group = "origen_resaltado"
       )
   })
   
   # Mostrar monumentos conectados
   observe({
-    # Reacciona cuando cambia la parada seleccionada,el tipo de lugar o el distrito
     req(parada_seleccionada(), input$tipo_lugar, input$distrito)
     
     proxy <- leafletProxy("mapa") %>% 
       clearGroup("recomendados") %>%
       clearGroup("paradas_destino")
     
-    # Obtener líneas de la parada origen
     info_origen <- paradas_trans %>% 
       filter(id_parada == parada_seleccionada())
     
@@ -670,7 +699,6 @@ server <- function(input, output, session) {
     lineas_origen <- unlist(strsplit(as.character(info_origen$lineas), ",")) %>% 
     trimws()
     
-    # Seleccionar dataset de monumentos
     monumentos <- switch(input$tipo_lugar,
       "Iglesias" = iglesias_trans,
       "Palacios y museos" = palacios_trans,
@@ -681,13 +709,10 @@ server <- function(input, output, session) {
     
     req(monumentos)
     
-    # Vector de paradas conectadas
     ids_todas_paradas_destino <- c()
-    
     conexion_valida <- c()
     
     for(i in 1:nrow(monumentos)) {
-    
       ids_cercanos <- unlist(
         strsplit(as.character(monumentos$id_parada[i]), ",")
       ) %>% trimws()
@@ -695,11 +720,9 @@ server <- function(input, output, session) {
       info_destinos <- paradas_trans %>%
         filter(as.character(id_parada) %in% ids_cercanos)
     
-      # Variable para saber si ESTE monumento conecta
       conecta_monumento <- FALSE
     
       for(j in 1:nrow(info_destinos)) {
-    
         lineas_parada_destino <- unlist(
           strsplit(as.character(info_destinos$lineas[j]), ",")
         ) %>%
@@ -708,10 +731,7 @@ server <- function(input, output, session) {
         comparte_linea <- any(lineas_origen %in% lineas_parada_destino)
     
         if(comparte_linea) {
-    
           conecta_monumento <- TRUE
-    
-          # Guardamos SOLO esta parada válida
           ids_todas_paradas_destino <- c(
             ids_todas_paradas_destino,
             info_destinos$id_parada[j]
@@ -721,10 +741,8 @@ server <- function(input, output, session) {
       conexion_valida[i] <- conecta_monumento
     }
     
-    # Monumentos recomendados
     recomendados <- monumentos[conexion_valida, ]
   
-    # Dibujar resultados
     if (nrow(recomendados) > 0) {
       proxy %>%
         addAwesomeMarkers(
@@ -741,29 +759,25 @@ server <- function(input, output, session) {
         proxy %>%
           addCircleMarkers(
             data = paradas_que_conectan,
-            radius = 2, color = "darkred",
+            radius = 4, color = "#ffffff", weight = 1, fillColor = "#9F1239", # Rojo más oscuro para destinos
           label = lapply(
             paste0(
-              "<b>Parada EMT:</b> ", paradas_que_conectan$denominaci, "<br/>",
+              "<b>Parada Destino:</b> ", paradas_que_conectan$denominaci, "<br/>",
               "<b>Líneas:</b> ", paradas_que_conectan$lineas
             ), 
             htmltools::HTML
           ),
             group = "paradas_destino",
-            opacity = 1
+            fillOpacity = 0.9
           )
       }
   })
   
-  # Reiniciar selector de parada al cambiar el distrito o el tipo de monumento
+  # Reiniciar selector
   observeEvent(
     list(input$distrito, input$tipo_lugar),
     {
-  
-      # Reiniciar parada seleccionada
       parada_seleccionada(NULL)
-  
-      # Limpiar capas relacionadas
       leafletProxy("mapa") %>%
         clearGroup("origen_resaltado") %>%
         clearGroup("recomendados") %>%
@@ -771,12 +785,13 @@ server <- function(input, output, session) {
     },
     ignoreInit = TRUE
   )
+  
   output$titulo_aislados <- renderText({
     req(input$tipo_aislado)
     paste("Listado de", input$tipo_aislado, "sin conexión cercana")
   })
 
-  # Renderizado de la tabla DT para los lugares aislados
+  # Renderizado de la tabla DT con estilo limpio
   output$tabla_aislados <- DT::renderDT({
     datos_tabla <- switch(input$tipo_aislado,
       "Iglesias" = tabla_iglesias_aisladas,
@@ -796,27 +811,23 @@ server <- function(input, output, session) {
         language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json'),
         dom = 'ftp' 
       ),
-      class = 'cell-border stripe hover'
+      class = 'display compact cell-border hover' # Clases CSS para tabla elegante
     )
   })
   
-  
-  # Definimos el estilo del icono para las fuentes
+  # Icono refinado para las fuentes
   icono_fuente <- makeAwesomeIcon(
     icon = "tint",
     iconColor = "white",
-    markerColor = "blue",
+    markerColor = "cadetblue",
     library = "fa"
   )
-  
-  
 
   # Capa de fuentes de agua
   observeEvent(list(input$distrito, input$fuentes_agua), {
     proxy <- leafletProxy("mapa") %>% 
       clearGroup("fuentes")
     
-    # Solo dibujamos si hay un distrito
     req(input$distrito)
     
     if (input$fuentes_agua) {
@@ -830,15 +841,15 @@ server <- function(input, output, session) {
     }
   })
 
-  # Capa de zonas verdes
+  # Capa de zonas verdes con verde esmeralda translúcido
   observeEvent(input$zonas_verdes, {
     proxy <- leafletProxy("mapa")
     
     if (input$zonas_verdes) {
       proxy %>% addPolygons(
         data = verdes_trans,
-        color = "green", weight = 1, fillColor = "green",
-        fillOpacity = 0.2, group = "zonas_verdes"
+        color = "#A7F3D0", weight = 1, fillColor = "#10B981",
+        fillOpacity = 0.25, group = "zonas_verdes"
       )
     } else {
       proxy %>% clearGroup("zonas_verdes")
@@ -848,8 +859,8 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
 ```
+
 
 
 
