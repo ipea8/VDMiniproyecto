@@ -1,18 +1,3 @@
----
-title: "Valencia SmarTourism"
-author: Javier Marzo Caballero, Iván Pérez Alonso, Yordano Rodriguez Bernal, Iván
-  Jiménez Mañó y Héctor Balbastre Aparisi
-date: "`r Sys.Date()`"
-output: html_document
-runtime: shiny
-resource_files:
-- Datos.RData
----
-
-```{r setup, include=FALSE}
-# Carga e instalación de librerías y datos
-
-
 library(leaflet)
 library(tidyverse)
 library(shiny)
@@ -21,152 +6,9 @@ library(plotly)
 library(sf)
 library(DT)
 library(htmltools)
-```
 
+load("Datos.RData")
 
-
-
-```{r, include=FALSE}
-# Carga de los datos necesarios para la realización del proyecto
-
-
-cargar_shapefiles <- function(directorio) {
-  # 1. Validar que el directorio existe
-  if (!dir.exists(directorio)) {
-    stop(paste("El directorio", directorio, "no existe."))
-  }
-  
-  # 2. Buscar archivos con extensión .shp usando expresiones regulares
-  # full.names = TRUE nos devuelve la ruta completa del archivo
-  rutas_archivos <- list.files(path = directorio, 
-                               pattern = "\\.shp$", 
-                               full.names = TRUE)
-  
-  if (length(rutas_archivos) == 0) {
-    message("No se encontraron archivos .shp en: ", directorio)
-    return(list())
-  }
-  
-  # 3. Crear una lista para almacenar los objetos espaciales (equivalente al diccionario en Python)
-  archivos_cargados <- list()
-  
-  # 4. Iterar y cargar cada archivo
-  for (ruta in rutas_archivos) {
-    nombre_archivo <- basename(ruta) # Extrae solo el nombre, ej: "mapa.shp"
-    
-    # Usamos tryCatch para que si un archivo falla, el bucle siga con los demás
-    tryCatch({
-      # st_read es la función correcta para importar el shapefile
-      # quiet = TRUE evita que R imprima metadatos en la consola por cada archivo
-      mapa <- st_read(ruta, quiet = TRUE)
-      
-      # Guardar en la lista usando el nombre del archivo como clave
-      archivos_cargados[[nombre_archivo]] <- mapa
-      message("Cargado exitosamente: ", nombre_archivo)
-      
-    }, error = function(e) {
-      message("Error al cargar ", nombre_archivo, ": ", e$message)
-    })
-  }
-  
-  return(archivos_cargados)
-}
-
-
-directorio <- "./Capas_procesadas/Capas_definitivas"
-archivos <- cargar_shapefiles(directorio) # El primer $ es para seleccionar el archivo, el segundo $ es para
-
-# Carga del archivo de hoteles para las gráficas extra
-data_hoteles <- st_read("Datos_Procesados/hoteles.geojson")
-
-iglesias_tal <- st_read('Capas_procesadas/Capas_definitivas/Iglesias_ID_parada_agrupadas.shp')
-otros_tal <- st_read('Capas_procesadas/Capas_definitivas/Monumentos_ID_parada_agrupados.shp')
-```
-
-```{r, include=FALSE}
-# Transformación de los datasets a utilizar
-
-
-# Transformamos a coordenadas
-distritos_trans <- st_transform(archivos$distritos_re.shp, crs = 4326)
-verdes_trans <- st_transform(archivos$verdexdistritos.shp, crs = 4326)
-fuentes_trans <- st_transform(archivos$Fuentesxdistritos.shp, crs = 4326)
-fuentes_trans <- st_cast(fuentes_trans, "POINT")
-paradas_trans <- st_transform(archivos$EMTxdistritos.shp, crs = 4326)
-paradas_trans <- st_cast(paradas_trans, "POINT")
-iglesias_trans <- st_transform(iglesias_tal, crs = 4326)
-iglesias_trans <- st_cast(iglesias_trans, "POINT")
-palacios_trans <- st_transform(archivos$palaciosymuseos_ID_Paradas_agrupadas.shp, crs = 4326)
-palacios_trans <- st_cast(palacios_trans, "POINT")
-parroquias_trans <- st_transform(archivos$parroquiasyconventos_ID_Parada_agrupados.shp, crs = 4326)
-parroquias_trans <- st_cast(parroquias_trans, "POINT")
-parques_trans <- st_transform(archivos$zonas_juegos_infantiles_ID_Parada_agrupadas.shp, crs = 4326)
-parques_trans <- st_cast(parques_trans, "POINT")
-
-parques_trans <- parques_trans %>%
-  rename(
-    distrito = nombre,
-    nombre = jardin
-  )
-
-otros_trans <- st_transform(otros_tal, crs = 4326)
-otros_trans <- st_cast(otros_trans, "POINT")
-
-#Transformación de capas aisladas 
-iglesias_aisladas_trans <- st_transform(archivos$iglesias_aisladas_actualizadas.shp, crs = 4326) %>% st_cast("POINT")
-palacios_aislados_trans <- st_transform(archivos$palaciosymuseos_aislados_actualizados.shp, crs = 4326) %>% st_cast("POINT")
-parques_aislados_trans <- st_transform(archivos$zonas_juegos_infantiles_aisladas_actualizadas.shp, crs = 4326) %>%st_cast("POINT")
-otros_aislados_trans <- st_transform(archivos$monumentos_aislados_actualizados.shp, crs = 4326) %>% st_cast("POINT")
-
-
-## PARA LOS LUGARES AISLADOS 
-
-# 1. Cargar la capa de paradas (que tiene el nombre/denominacion)
-nombres_paradas <- paradas_trans %>% 
-  as.data.frame() %>% 
-  select(id_parada, nombre_parada_cercana = denominaci)
-
-preparar_aislados<- function(capa) {
-  
-  # 1. Hacemos la unión con los nombres de las paradas primero
-  temp_df <- capa %>%
-    left_join(nombres_paradas, by = "id_parada") %>% 
-    as.data.frame()
-  
-  # 2. Aplicamos la lógica de columnas según el tipo de capa
-  if ("jardin" %in% names(temp_df)) {
-    # CASO PARQUES
-    resultado <- temp_df %>%
-      select(
-        `Lugar Aislado` = jardin, 
-        Distrito = nombre, 
-        `Parada más Cercana` = nombre_parada_cercana
-      )
-  } else {
-    # CASO RESTO DE CAPAS (Iglesias, Palacios, Otros)
-    resultado <- temp_df %>%
-      select(
-        `Lugar Aislado` = nombre, 
-        Distrito = nombre_2, 
-        `Parada más Cercana` = nombre_parada_cercana
-      )
-  }
-  
-  return(resultado)
-}
-
-
-tabla_iglesias_aisladas<- preparar_aislados(iglesias_aisladas_trans)
-tabla_palacios_aislados<- preparar_aislados(palacios_aislados_trans)
-tabla_parques_aislados<- preparar_aislados(parques_aislados_trans)
-tabla_otros_aislados<- preparar_aislados(otros_aislados_trans)
-
-
-```
-
-
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ui <- navbarPage(
   title = "Valencia SmarTourism",
   id = "menu_app",
@@ -220,104 +62,104 @@ ui <- navbarPage(
   
   # Pestaña con el mapa
   tabPanel("Mapa Interactivo",
-    icon = icon("map-location-dot"),
-    sidebarLayout(
-      sidebarPanel(
-        
-        tags$div(
-          style = "background-color: #F0FDF4; border-left: 4px solid #22C55E; padding: 12px; border-radius: 4px; margin-bottom: 15px;",
-          tags$h4("Guía de uso", style = "margin-top: 0; color: #166534; font-size: 14px; font-weight: 600;"),
-          tags$p("1. Selecciona un distrito.", style = "margin-bottom: 4px; font-size: 13px; color: #15803D;"),
-          tags$p("2. Selecciona el tipo de monumento que quieres ver.", style = "margin-bottom: 0; font-size: 13px; color: #15803D;")
-        ),
-        tags$div(
-          style = "background-color: #FFFBEB; border-left: 4px solid #F59E0B; padding: 12px; border-radius: 4px; margin-bottom: 25px;",
-          tags$p(tags$strong("💡 ¡Pruébalo!"), " Una vez seleccionado el distrito y el monumento, clica en una parada de autobús.", style = "margin-bottom: 0; font-size: 13px; color: #B45309;")
-        ),
-        
-        helpText("Elige la cartografía del mapa."),
-        selectInput("tipo_mapa", "Estilo del mapa:",
-            choices = c("Gris claro (Profesional)" = "CartoDB.Positron",
-                        "Color (Voyager)" = "CartoDB.Voyager",
-                        "Satélite" = "Esri.WorldImagery",
-                        "Oscuro" = "CartoDB.DarkMatter")),
-        helpText("Selecciona un distrito para comenzar."),
-        selectInput("distrito", "Distritos:", 
-                    choices = c("Selecciona uno" = "", distritos_trans$nombre)),
-        helpText("¿Qué buscas?"),
-        selectInput("tipo_lugar", "Tipo de lugar:",
-                    choices = c("Ninguno" = "", "Iglesias", "Palacios y museos",
-                                "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
-        checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE),
-        checkboxInput("fuentes_agua", "Ver fuentes de agua en el distrito seleccionado", value = FALSE)
-      ),
-      mainPanel(
-        leafletOutput("mapa", height = "700px")
-      )
-    )
+           icon = icon("map-location-dot"),
+           sidebarLayout(
+             sidebarPanel(
+               
+               tags$div(
+                 style = "background-color: #F0FDF4; border-left: 4px solid #22C55E; padding: 12px; border-radius: 4px; margin-bottom: 15px;",
+                 tags$h4("Guía de uso", style = "margin-top: 0; color: #166534; font-size: 14px; font-weight: 600;"),
+                 tags$p("1. Selecciona un distrito.", style = "margin-bottom: 4px; font-size: 13px; color: #15803D;"),
+                 tags$p("2. Selecciona el tipo de monumento que quieres ver.", style = "margin-bottom: 0; font-size: 13px; color: #15803D;")
+               ),
+               tags$div(
+                 style = "background-color: #FFFBEB; border-left: 4px solid #F59E0B; padding: 12px; border-radius: 4px; margin-bottom: 25px;",
+                 tags$p(tags$strong("💡 ¡Pruébalo!"), " Una vez seleccionado el distrito y el monumento, clica en una parada de autobús.", style = "margin-bottom: 0; font-size: 13px; color: #B45309;")
+               ),
+               
+               helpText("Elige la cartografía del mapa."),
+               selectInput("tipo_mapa", "Estilo del mapa:",
+                           choices = c("Gris claro (Profesional)" = "CartoDB.Positron",
+                                       "Color (Voyager)" = "CartoDB.Voyager",
+                                       "Satélite" = "Esri.WorldImagery",
+                                       "Oscuro" = "CartoDB.DarkMatter")),
+               helpText("Selecciona un distrito para comenzar."),
+               selectInput("distrito", "Distritos:", 
+                           choices = c("Selecciona uno" = "", distritos_trans$nombre)),
+               helpText("¿Qué buscas?"),
+               selectInput("tipo_lugar", "Tipo de lugar:",
+                           choices = c("Ninguno" = "", "Iglesias", "Palacios y museos",
+                                       "Parroquias y conventos", "Zonas de juego y parques", "Otros")),
+               checkboxInput("zonas_verdes", "Ver zonas verdes", value = FALSE),
+               checkboxInput("fuentes_agua", "Ver fuentes de agua en el distrito seleccionado", value = FALSE)
+             ),
+             mainPanel(
+               leafletOutput("mapa", height = "700px")
+             )
+           )
   ),
   
   # Pestaña con el resto de gráficos
   navbarMenu("Gráficas",
-    tabPanel("Estadísticas de Hoteles",
-      icon = icon("chart-bar"),
-      fluidPage(
-        column(12,
-               h2("Análisis de Hoteles por Distrito", style = "color: #1E293B; font-weight: 600;"),
-               p("Este gráfico muestra la capacidad hotelera de cada distrito.", style = "color: #64748B;"),
-               plotlyOutput("hoteles", height = "600px")
-        )
-      )
-    ),
-    tabPanel("Monumentos por Distrito",
-      icon = icon("monument"),
-      fluidPage(
-        column(12,
-          h2("Monumentos por Distrito", style = "color: #1E293B; font-weight: 600;"),
-          p("Selecciona los tipos de monumentos que deseas visualizar.", style = "color: #64748B;"),
-          checkboxGroupInput(
-            inputId  = "tipos_monumento",
-            label    = "Tipos de monumentos:",
-            choices  = c("Iglesias", "Palacios y museos",
-                         "Parroquias y conventos", "Zonas de juego y parques",
-                         "Otros monumentos"),
-            selected = "Iglesias",
-            inline   = TRUE
-          ),
-          plotlyOutput("monumentos_grafica", height = "500px")
-        )
-      )
-    ),
-    tabPanel("Paradas por Distrito",
-      icon = icon("bus"),
-      fluidPage(
-        column(12,
-          h2("Paradas EMT por Distrito", style = "color: #1E293B; font-weight: 600;"),
-          p("Número de paradas de la EMT en cada distrito de Valencia.", style = "color: #64748B;"),
-          plotlyOutput("paradas_grafica", height = "500px")
-        )
-      )
-    ),
-    tabPanel("Lugares aislados",
-      icon = icon("circle-exclamation"),
-      fluidPage(
-        column(12,
-          h2("Lugares Aislados", style = "color: #1E293B; font-weight: 600;"),
-          p("Consulta los puntos de interés que se encuentran a más de 300 metros de la parada de la EMT más cercana.", style = "color: #64748B;"),
-          
-          wellPanel(
-            selectInput("tipo_aislado", "Ver puntos negros de:",
-                        choices = c("Iglesias", "Palacios y museos", 
-                                    "Zonas de juego y parques", "Otros"))
-          ),
-          hr(style = "border-top: 1px solid #E2E8F0;"),
-          
-          h3(textOutput("titulo_aislados"), style = "color: #334155; font-weight: 400;"),
-          
-          DT::DTOutput("tabla_aislados")
-        )
-      )
-    )
+             tabPanel("Estadísticas de Hoteles",
+                      icon = icon("chart-bar"),
+                      fluidPage(
+                        column(12,
+                               h2("Análisis de Hoteles por Distrito", style = "color: #1E293B; font-weight: 600;"),
+                               p("Este gráfico muestra la capacidad hotelera de cada distrito.", style = "color: #64748B;"),
+                               plotlyOutput("hoteles", height = "600px")
+                        )
+                      )
+             ),
+             tabPanel("Monumentos por Distrito",
+                      icon = icon("monument"),
+                      fluidPage(
+                        column(12,
+                               h2("Monumentos por Distrito", style = "color: #1E293B; font-weight: 600;"),
+                               p("Selecciona los tipos de monumentos que deseas visualizar.", style = "color: #64748B;"),
+                               checkboxGroupInput(
+                                 inputId  = "tipos_monumento",
+                                 label    = "Tipos de monumentos:",
+                                 choices  = c("Iglesias", "Palacios y museos",
+                                              "Parroquias y conventos", "Zonas de juego y parques",
+                                              "Otros monumentos"),
+                                 selected = "Iglesias",
+                                 inline   = TRUE
+                               ),
+                               plotlyOutput("monumentos_grafica", height = "500px")
+                        )
+                      )
+             ),
+             tabPanel("Paradas por Distrito",
+                      icon = icon("bus"),
+                      fluidPage(
+                        column(12,
+                               h2("Paradas EMT por Distrito", style = "color: #1E293B; font-weight: 600;"),
+                               p("Número de paradas de la EMT en cada distrito de Valencia.", style = "color: #64748B;"),
+                               plotlyOutput("paradas_grafica", height = "500px")
+                        )
+                      )
+             ),
+             tabPanel("Lugares aislados",
+                      icon = icon("circle-exclamation"),
+                      fluidPage(
+                        column(12,
+                               h2("Lugares Aislados", style = "color: #1E293B; font-weight: 600;"),
+                               p("Consulta los puntos de interés que se encuentran a más de 300 metros de la parada de la EMT más cercana.", style = "color: #64748B;"),
+                               
+                               wellPanel(
+                                 selectInput("tipo_aislado", "Ver puntos negros de:",
+                                             choices = c("Iglesias", "Palacios y museos", 
+                                                         "Zonas de juego y parques", "Otros"))
+                               ),
+                               hr(style = "border-top: 1px solid #E2E8F0;"),
+                               
+                               h3(textOutput("titulo_aislados"), style = "color: #334155; font-weight: 400;"),
+                               
+                               DT::DTOutput("tabla_aislados")
+                        )
+                      )
+             )
   )
 )
 
@@ -354,7 +196,7 @@ server <- function(input, output, session) {
         panel.grid.major.x = element_blank()
       ) +
       scale_fill_brewer(palette = "Blues") # Paleta profesional monocromática
-      
+    
     ggplotly(gg) %>%
       config(displayModeBar = FALSE)
   })
@@ -362,7 +204,7 @@ server <- function(input, output, session) {
   # Gráfica de monumentos por distrito
   output$monumentos_grafica <- renderPlotly({
     req(input$tipos_monumento)
-
+    
     datasets <- list(
       "Iglesias"                 = iglesias_trans,
       "Palacios y museos"        = palacios_trans,
@@ -370,11 +212,11 @@ server <- function(input, output, session) {
       "Zonas de juego y parques" = parques_trans,
       "Otros monumentos"         = otros_trans
     )
-
+    
     distritos_ref <- distritos_trans %>%
       as.data.frame() %>%
       select(coddistrit, nombre)
-
+    
     df_combined <- purrr::map_dfr(input$tipos_monumento, function(tipo) {
       datasets[[tipo]] %>%
         as.data.frame() %>%
@@ -387,12 +229,12 @@ server <- function(input, output, session) {
         tipo   = input$tipos_monumento,
         fill   = list(n = 0)
       )
-
+    
     # Paleta de colores profesional para monumentos
     colores_monumentos <- c("Iglesias" = "#4F46E5", "Palacios y museos" = "#0F766E",
                             "Parroquias y conventos" = "#7C3AED", "Zonas de juego y parques" = "#059669",
                             "Otros monumentos" = "#D97706")
-
+    
     gg <- ggplot(df_combined, aes(x = nombre, y = n, fill = tipo)) +
       geom_bar(stat = "identity", position = "stack", width = 0.75) +
       scale_fill_manual(values = colores_monumentos) +
@@ -407,24 +249,24 @@ server <- function(input, output, session) {
         axis.text.x = element_text(angle = 45, hjust = 1, color = "#475569"),
         panel.grid.major.x = element_blank()
       )
-
+    
     ggplotly(gg) %>%
       config(displayModeBar = FALSE)
   })
   
   # Gráfica de paradas por distrito
   output$paradas_grafica <- renderPlotly({
-
+    
     distritos_ref <- distritos_trans %>%
       as.data.frame() %>%
       select(coddistrit, nombre) %>%
       distinct()
-
+    
     df_paradas <- paradas_trans %>%
       as.data.frame() %>%
       count(coddistrit) %>%
       left_join(distritos_ref, by = "coddistrit")
-
+    
     gg <- ggplot(df_paradas, aes(x = n, y = reorder(nombre, n), fill = n)) +
       geom_bar(stat = "identity", width = 0.7) +
       scale_fill_gradient(low = "#93C5FD", high = "#1E3A8A") + # Degradado azul profesional
@@ -439,7 +281,7 @@ server <- function(input, output, session) {
         axis.text.y = element_text(color = "#334155"),
         panel.grid.major.y = element_blank()
       )
-
+    
     ggplotly(gg) %>%
       config(displayModeBar = FALSE)
   })
@@ -478,8 +320,8 @@ server <- function(input, output, session) {
         title = "<strong>Puntos de Interés</strong>",
         opacity = 0.85
       )
-})
-
+  })
+  
   # Preparamos los datos
   datos_distrito <- reactive({
     req(input$distrito) 
@@ -498,7 +340,7 @@ server <- function(input, output, session) {
       otros = otros_trans %>% filter(coddistrit == cod)
     )
   })
-
+  
   # Observar selección de distrito (Bordes más marcados, relleno sutil)
   observeEvent(input$distrito, {
     req(input$distrito)
@@ -512,7 +354,7 @@ server <- function(input, output, session) {
         group = "resaltado"
       ) 
   })
-
+  
   # Observar selección de lugares de interés
   observeEvent(list(input$distrito, input$tipo_lugar),{
     proxy <- leafletProxy("mapa") %>% 
@@ -525,17 +367,17 @@ server <- function(input, output, session) {
     
     if (input$tipo_lugar == "Iglesias") {
       if (nrow(datos_distrito()$iglesias)>0){
-      proxy %>% 
-        addCircleMarkers(
-          data = datos_distrito()$iglesias,
-          radius = 5, color = "#ffffff", weight = 1, fillColor = "#4F46E5",
-          label = ~nombre,
-          fillOpacity = 0.85,
-          group = "seleccion"
-        )
+        proxy %>% 
+          addCircleMarkers(
+            data = datos_distrito()$iglesias,
+            radius = 5, color = "#ffffff", weight = 1, fillColor = "#4F46E5",
+            label = ~nombre,
+            fillOpacity = 0.85,
+            group = "seleccion"
+          )
       }
-        
-    proxy %>%
+      
+      proxy %>%
         addCircleMarkers(
           data = datos_distrito()$paradas,
           layerId = ~id_parada,
@@ -554,14 +396,14 @@ server <- function(input, output, session) {
     
     else if (input$tipo_lugar == "Palacios y museos") {
       if (nrow(datos_distrito()$palacios)>0){
-    proxy %>% 
-        addCircleMarkers(
-          data = datos_distrito()$palacios,
-          radius = 5, color = "#ffffff", weight = 1, fillColor = "#0F766E",
-          label = ~nombre,
-          fillOpacity = 0.85,
-          group = "seleccion"
-        ) 
+        proxy %>% 
+          addCircleMarkers(
+            data = datos_distrito()$palacios,
+            radius = 5, color = "#ffffff", weight = 1, fillColor = "#0F766E",
+            label = ~nombre,
+            fillOpacity = 0.85,
+            group = "seleccion"
+          ) 
       }
       proxy%>%
         addCircleMarkers(
@@ -582,13 +424,13 @@ server <- function(input, output, session) {
     else if (input$tipo_lugar == "Parroquias y conventos") {
       if (nrow(datos_distrito()$parroquias)>0){
         proxy %>% 
-        addCircleMarkers(
-          data = datos_distrito()$parroquias,
-          radius = 5, color = "#ffffff", weight = 1, fillColor = "#7C3AED",
-          label = ~nombre,
-          fillOpacity = 0.85,
-          group = "seleccion"
-        ) 
+          addCircleMarkers(
+            data = datos_distrito()$parroquias,
+            radius = 5, color = "#ffffff", weight = 1, fillColor = "#7C3AED",
+            label = ~nombre,
+            fillOpacity = 0.85,
+            group = "seleccion"
+          ) 
       }
       
       proxy%>%
@@ -609,14 +451,14 @@ server <- function(input, output, session) {
     
     else if (input$tipo_lugar == "Zonas de juego y parques") { 
       if (nrow(datos_distrito()$parques)>0){
-    proxy %>% 
-        addCircleMarkers(
-          data = datos_distrito()$parques,
-          radius = 5, color = "#ffffff", weight = 1, fillColor = "#059669",
-          label = ~nombre,
-          fillOpacity = 0.85,
-          group = "seleccion"
-        ) 
+        proxy %>% 
+          addCircleMarkers(
+            data = datos_distrito()$parques,
+            radius = 5, color = "#ffffff", weight = 1, fillColor = "#059669",
+            label = ~nombre,
+            fillOpacity = 0.85,
+            group = "seleccion"
+          ) 
       }
       proxy%>%
         addCircleMarkers(
@@ -637,13 +479,13 @@ server <- function(input, output, session) {
     else if (input$tipo_lugar == "Otros") {
       if (nrow(datos_distrito()$otros)>0){
         proxy %>% 
-        addCircleMarkers(
-          data = datos_distrito()$otros,
-          radius = 5, color = "#ffffff", weight = 1, fillColor = "#D97706",
-          label = ~nombre,
-          fillOpacity = 0.85,
-          group = "seleccion"
-        )
+          addCircleMarkers(
+            data = datos_distrito()$otros,
+            radius = 5, color = "#ffffff", weight = 1, fillColor = "#D97706",
+            label = ~nombre,
+            fillOpacity = 0.85,
+            group = "seleccion"
+          )
       }
       proxy%>%
         addCircleMarkers(
@@ -697,14 +539,14 @@ server <- function(input, output, session) {
     req(nrow(info_origen) > 0)
     
     lineas_origen <- unlist(strsplit(as.character(info_origen$lineas), ",")) %>% 
-    trimws()
+      trimws()
     
     monumentos <- switch(input$tipo_lugar,
-      "Iglesias" = iglesias_trans,
-      "Palacios y museos" = palacios_trans,
-      "Parroquias y conventos" = parroquias_trans,
-      "Zonas de juego y parques" = parques_trans,
-      "Otros" = otros_trans
+                         "Iglesias" = iglesias_trans,
+                         "Palacios y museos" = palacios_trans,
+                         "Parroquias y conventos" = parroquias_trans,
+                         "Zonas de juego y parques" = parques_trans,
+                         "Otros" = otros_trans
     )
     
     req(monumentos)
@@ -716,20 +558,20 @@ server <- function(input, output, session) {
       ids_cercanos <- unlist(
         strsplit(as.character(monumentos$id_parada[i]), ",")
       ) %>% trimws()
-    
+      
       info_destinos <- paradas_trans %>%
         filter(as.character(id_parada) %in% ids_cercanos)
-    
+      
       conecta_monumento <- FALSE
-    
+      
       for(j in 1:nrow(info_destinos)) {
         lineas_parada_destino <- unlist(
           strsplit(as.character(info_destinos$lineas[j]), ",")
         ) %>%
           trimws()
-    
+        
         comparte_linea <- any(lineas_origen %in% lineas_parada_destino)
-    
+        
         if(comparte_linea) {
           conecta_monumento <- TRUE
           ids_todas_paradas_destino <- c(
@@ -742,7 +584,7 @@ server <- function(input, output, session) {
     }
     
     recomendados <- monumentos[conexion_valida, ]
-  
+    
     if (nrow(recomendados) > 0) {
       proxy %>%
         addAwesomeMarkers(
@@ -753,13 +595,13 @@ server <- function(input, output, session) {
         )
     }
     paradas_que_conectan <- paradas_trans %>%
-        filter(as.character(id_parada) %in% unique(ids_todas_paradas_destino))
-      
-      if (nrow(paradas_que_conectan) > 0) {
-        proxy %>%
-          addCircleMarkers(
-            data = paradas_que_conectan,
-            radius = 4, color = "#ffffff", weight = 1, fillColor = "#9F1239", # Rojo más oscuro para destinos
+      filter(as.character(id_parada) %in% unique(ids_todas_paradas_destino))
+    
+    if (nrow(paradas_que_conectan) > 0) {
+      proxy %>%
+        addCircleMarkers(
+          data = paradas_que_conectan,
+          radius = 4, color = "#ffffff", weight = 1, fillColor = "#9F1239", # Rojo más oscuro para destinos
           label = lapply(
             paste0(
               "<b>Parada Destino:</b> ", paradas_que_conectan$denominaci, "<br/>",
@@ -767,10 +609,10 @@ server <- function(input, output, session) {
             ), 
             htmltools::HTML
           ),
-            group = "paradas_destino",
-            fillOpacity = 0.9
-          )
-      }
+          group = "paradas_destino",
+          fillOpacity = 0.9
+        )
+    }
   })
   
   # Reiniciar selector
@@ -790,18 +632,18 @@ server <- function(input, output, session) {
     req(input$tipo_aislado)
     paste("Listado de", input$tipo_aislado, "sin conexión cercana")
   })
-
+  
   # Renderizado de la tabla DT con estilo limpio
   output$tabla_aislados <- DT::renderDT({
     datos_tabla <- switch(input$tipo_aislado,
-      "Iglesias" = tabla_iglesias_aisladas,
-      "Palacios y museos" = tabla_palacios_aislados,
-      "Zonas de juego y parques" = tabla_parques_aislados,
-      "Otros" = tabla_otros_aislados
+                          "Iglesias" = tabla_iglesias_aisladas,
+                          "Palacios y museos" = tabla_palacios_aislados,
+                          "Zonas de juego y parques" = tabla_parques_aislados,
+                          "Otros" = tabla_otros_aislados
     )
     
     req(datos_tabla)
-
+    
     DT::datatable(
       datos_tabla,
       rownames = FALSE,
@@ -822,7 +664,7 @@ server <- function(input, output, session) {
     markerColor = "cadetblue",
     library = "fa"
   )
-
+  
   # Capa de fuentes de agua
   observeEvent(list(input$distrito, input$fuentes_agua), {
     proxy <- leafletProxy("mapa") %>% 
@@ -840,7 +682,7 @@ server <- function(input, output, session) {
       proxy %>% clearGroup("fuentes")
     }
   })
-
+  
   # Capa de zonas verdes con verde esmeralda translúcido
   observeEvent(input$zonas_verdes, {
     proxy <- leafletProxy("mapa")
@@ -859,9 +701,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-```
-
-
-
-
-
