@@ -166,7 +166,7 @@ tabla_otros_aislados<- preparar_aislados(otros_aislados_trans)
 Una vez cargados los archivos creamos la página que contiene el mapa.
 ```{r}
 ui <- navbarPage(
-  title = "Valencia y EMT",
+  title = "Valencia SmarTurism",
   id = "menu_app",
   theme = shinythemes::shinytheme("flatly"),
   
@@ -776,7 +776,7 @@ server <- function(input, output, session) {
     paste("Listado de", input$tipo_aislado, "sin conexión cercana")
   })
 
-  # 2. Renderizado de la tabla DT para los lugares aislados
+  # Renderizado de la tabla DT para los lugares aislados
   output$tabla_aislados <- DT::renderDT({
     datos_tabla <- switch(input$tipo_aislado,
       "Iglesias" = tabla_iglesias_aisladas,
